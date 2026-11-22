@@ -5,6 +5,7 @@ const ui = Object.fromEntries([
   'open-source', 'open-settings', 'sample', 'study-form', 'station', 'alternative',
   'plaza-level', 'source-name', 'settings-name', 'calculate', 'status', 'track-name',
   'section-name', 'plan', 'section', 'volumes', 'rail-level', 'platform-level',
+  'report-intent', 'report-rationale',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
@@ -22,6 +23,15 @@ function updateProjectStatus() {
 
 function studyInput() {
   return [ui.station.valueAsNumber, alternatives.map(({ plazaLevel }) => plazaLevel)];
+}
+
+function readReportNotes() {
+  return { intent: ui['report-intent'].value, rationale: ui['report-rationale'].value };
+}
+
+function showReportNotes(notes) {
+  ui['report-intent'].value = notes?.intent ?? '';
+  ui['report-rationale'].value = notes?.rationale ?? '';
 }
 
 function updateExportButtons() {
@@ -85,7 +95,7 @@ async function run() {
 
 async function task(action) {
   const controls = [ui['open-project'], ui['save-project'], ui['open-source'], ui['open-settings'], ui.sample, ui.station,
-    ui.alternative, ui['plaza-level'], ui.calculate, ...exportButtons];
+    ui.alternative, ui['plaza-level'], ui.calculate, ui['report-intent'], ui['report-rationale'], ...exportButtons];
   for (const control of controls) control.disabled = true;
   try {
     await action();
@@ -150,6 +160,7 @@ const loadSample = () => task(async () => {
   showSource(result.source);
   showSettings(result);
   projectName = undefined;
+  showReportNotes();
   dirty = false;
   await run();
 });
@@ -160,11 +171,12 @@ ui['open-project'].addEventListener('click', () => task(async () => {
   showSource(result.source);
   showSettings(result);
   projectName = result.projectName;
+  showReportNotes(result.report);
   dirty = false;
   await run();
 }));
 ui['save-project'].addEventListener('click', () => task(async () => {
-  const name = await window.stationForm.saveProject(...studyInput(), selected);
+  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes());
   if (!name) return;
   projectName = name;
   dirty = settingsEdited = false;
@@ -173,9 +185,15 @@ ui['save-project'].addEventListener('click', () => task(async () => {
 window.addEventListener('beforeunload', (event) => {
   if (dirty) event.preventDefault();
 });
+for (const field of [ui['report-intent'], ui['report-rationale']]) {
+  field.addEventListener('input', () => {
+    dirty = true;
+    updateProjectStatus();
+  });
+}
 for (const button of exportButtons) {
   button.addEventListener('click', () => task(async () => {
-    const name = await window.stationForm.exportStudy(button.dataset.export, ...studyInput(), selected);
+    const name = await window.stationForm.exportStudy(button.dataset.export, ...studyInput(), selected, readReportNotes());
     if (name) message(`${name} 파일을 저장했습니다.`);
   }));
 }

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';">
+  <title>건축설계설명서</title>
+  <link rel="stylesheet" href="./report.css">
+  <script type="module" src="./report.mjs"></script>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">StationForm · 철도역사 개념설계</p>
+    <h1>건축설계설명서</h1>
+    <p id="project" class="project"></p>
+    <p id="revision" class="meta"></p>
+  </header>
+  <section>
+    <h2>부지 검토 개요</h2>
+    <dl id="overview"></dl>
+  </section>
+  <section>
+    <h2>설계 의도</h2>
+    <p id="intent" class="notes"></p>
+    <h2>대안 채택 사유</h2>
+    <p id="rationale" class="notes"></p>
+  </section>
+  <section>
+    <h2>대안별 부지정지 및 토공량</h2>
+    <table>
+      <thead><tr><th>대안</th><th>계획고<br>(m)</th><th>절토<br>(m³)</th><th>성토<br>(m³)</th><th>격자 크기<br>(m)</th><th>계산 면적<br>(m²)</th></tr></thead>
+      <tbody id="alternatives"></tbody>
+    </table>
+    <p class="meta">토공량은 사면 접합 경계 안에서 현황과 계획 지표면을 격자로 비교한 개략값입니다.</p>
+  </section>
+  <section class="figures">
+    <h2>선택 대안 배치 및 횡단면</h2>
+    <p id="figure-revision" class="meta"></p>
+    <figure>
+      <figcaption>배치 평면</figcaption>
+      <svg id="plan" viewBox="0 0 680 270" role="img" aria-label="선로, 승강장, 광장 및 사면 접합선"></svg>
+      <p class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="proposed-key">광장</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></p>
+    </figure>
+    <figure>
+      <figcaption>A–A 횡단면</figcaption>
+      <svg id="section" viewBox="0 0 680 240" role="img" aria-label="현황 지표면과 계획 지표면 횡단면"></svg>
+      <p class="legend"><span class="track-key">현황 지표면</span><span class="proposed-key">계획 지표면</span><span class="platform-key">승강장</span><span class="cut-key">레일면</span></p>
+    </figure>
+  </section>
+</body>
+</html>

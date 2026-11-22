@@ -51,3 +51,13 @@ test('unknown versions, foreign files and corrupt JSON are rejected', async (con
   await writeFile(path, '{');
   await assert.rejects(readProjectFile(path), SyntaxError);
 });
+
+test('report notes are optional and survive a save and reopen', async (context) => {
+  const { project, path } = await projectFixture(context);
+  await writeProjectFile(path, project);
+  assert.equal((await readProjectFile(path)).report, undefined);
+  const report = { intent: '역전광장을 조성한다.\n승강장 접근을 고려한다.', rationale: '대안 B를 선택하였다.' };
+  await writeProjectFile(path, { ...project, report });
+  assert.deepEqual((await readProjectFile(path)).report, report);
+  await assert.rejects(writeProjectFile(path, { ...project, report: { intent: 1 } }), /텍스트여야 합니다/);
+});

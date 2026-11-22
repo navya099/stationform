@@ -4,10 +4,11 @@ import { lstat, readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCivilCraft } from '../src/civilcraft.mjs';
-import { writeTextFile } from '../src/local-files.mjs';
-import { readProjectFile, writeProjectFile } from '../src/project-file.mjs';
+import { writeLocalFile } from '../src/local-files.mjs';
+import { readProjectFile, reportNotes, writeProjectFile } from '../src/project-file.mjs';
 import { studySite } from '../src/site-study.mjs';
 import { writeEarthworkCsv, writeStudyDxf } from '../src/study-exports.mjs';
+import { createStudyPdf } from './report-pdf.mjs';
 
 const checkout = process.env.STATIONFORM_CIVILCRAFT || process.argv[2];
 const sampleXml = new URL('../fixtures/concept-station.xml', import.meta.url);
@@ -17,6 +18,7 @@ const exportFormats = new Map([
   ['plan', { label: '배치 평면', extension: 'dxf' }],
   ['section', { label: '횡단면', extension: 'dxf' }],
   ['earthwork', { label: '토공량 비교표', extension: 'csv' }],
+  ['report', { label: '건축설계설명서', extension: 'pdf' }],
 ]);
 
 app.commandLine.appendSwitch('disable-background-networking');
@@ -147,21 +149,30 @@ function openWindow(engine) {
     lastStudy = { result, input, revision };
     return result;
   });
-  handle('study:export', async (kind, station, levels, selected) => {
+  handle('study:export', async (kind, station, levels, selected, report) => {
     const format = exportFormats.get(kind);
     if (!format) throw new Error('지원하지 않는 내보내기 형식입니다.');
     const input = JSON.stringify(updatedOptions(station, levels));
     if (!lastStudy || lastStudy.input !== input) throw new Error('계산을 적용한 뒤 내보내세요.');
     const { result, revision } = lastStudy;
+    if (kind !== 'earthwork' && (!Number.isInteger(selected) || !result.alternatives[selected])) {
+      throw new Error('내보낼 대안을 선택하세요.');
+    }
     const altNumber = kind === 'earthwork' ? '' : `-alt-${selected + 1}`;
     const ext = format.extension;
-    const data = kind === 'earthwork'
-      ? writeEarthworkCsv(result, revision)
-      : writeStudyDxf(engine.writeDxf, result, revision, kind, selected);
+    const notes = kind === 'report' ? reportNotes(report) : undefined;
     const stem = projectPath ? basename(projectPath, '.stationform') : basename(source.name).replace(/\.(?:landxml|xml)$/i, '');
     const path = await savePath(`${stem}-${kind}${altNumber}`, ext, [{ name: format.label, extensions: [ext] }]);
     if (!path) return null;
-    await writeTextFile(path, data);
+    let data;
+    if (kind === 'report') {
+      data = await createStudyPdf({ study: result, revision, selected, notes, project: stem, source: source.name });
+    } else if (kind === 'earthwork') {
+      data = writeEarthworkCsv(result, revision);
+    } else {
+      data = writeStudyDxf(engine.writeDxf, result, revision, kind, selected);
+    }
+    await writeLocalFile(path, data);
     return basename(path);
   });
   handle('project:open', async () => {
@@ -172,6 +183,7 @@ function openWindow(engine) {
       projectName: basename(path),
       source: project.source.name,
       selected: project.selected,
+      report: project.report,
       ...fields(project.settings),
     };
     ({ source, settings } = project);
@@ -179,7 +191,7 @@ function openWindow(engine) {
     lastStudy = undefined;
     return result;
   });
-  handle('project:save', async (station, levels, selected) => {
+  handle('project:save', async (station, levels, selected, report) => {
     const options = updatedOptions(station, levels);
     let path = projectPath;
     if (!path) {
@@ -188,7 +200,7 @@ function openWindow(engine) {
       if (!path) return null;
     }
     const savedSettings = { ...settings, options };
-    await writeProjectFile(path, { source, settings: savedSettings, selected });
+    await writeProjectFile(path, { source, settings: savedSettings, selected, report });
     settings = savedSettings;
     projectPath = path;
     return basename(path);

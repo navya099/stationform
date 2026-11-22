@@ -1,11 +1,19 @@
 import { readFile } from 'node:fs/promises';
-import { writeTextFile } from './local-files.mjs';
+import { writeLocalFile } from './local-files.mjs';
 
 const FORMAT = 'stationform';
 const VERSION = 1;
 
 function named(name) {
   return typeof name === 'string' && name.trim().length > 0;
+}
+
+export function reportNotes(report = { intent: '', rationale: '' }) {
+  if (typeof report?.intent !== 'string' || typeof report?.rationale !== 'string') {
+    throw new Error('설계 의도와 대안 채택 사유는 텍스트여야 합니다.');
+  }
+  const { intent, rationale } = report;
+  return intent || rationale ? { intent, rationale } : undefined;
 }
 
 function validate(project) {
@@ -22,7 +30,8 @@ function validate(project) {
     || !Number.isInteger(selected) || selected < 0 || selected >= options.alternatives.length) {
     throw new Error('프로젝트의 측점, 대안 또는 광장 계획고가 유효하지 않습니다.');
   }
-  return { source, settings, selected };
+  const report = reportNotes(project.report);
+  return { source, settings, selected, ...(report && { report }) };
 }
 
 export async function readProjectFile(path) {
@@ -30,9 +39,7 @@ export async function readProjectFile(path) {
   return validate(JSON.parse(content.replace(/^\uFEFF/, '')));
 }
 
-export async function writeProjectFile(path, { source, settings, selected }) {
-  const project = { format: FORMAT, version: VERSION, source, settings, selected };
-  validate(project);
-
-  await writeTextFile(path, JSON.stringify(project, null, 2) + '\n');
+export async function writeProjectFile(path, { source, settings, selected, report }) {
+  const project = validate({ format: FORMAT, version: VERSION, source, settings, selected, report });
+  await writeLocalFile(path, JSON.stringify({ format: FORMAT, version: VERSION, ...project }, null, 2) + '\n');
 }

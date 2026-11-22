@@ -1,0 +1,51 @@
+@page { size: A4; margin: 17mm; }
+:root {
+  font: 10.5pt/1.55 "Noto Sans CJK KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  color: #162c38;
+  --muted: #465d69;
+  --rule: #aebbc0;
+  --track: #455b75;
+  --platform: #28638c;
+  --planned: #18755c;
+  --grading: #376f57;
+  --cut: #a14e18;
+}
+body { margin: 0; overflow-wrap: anywhere; }
+header { border-bottom: 2px solid var(--planned); padding-bottom: 9pt; margin-bottom: 14pt; }
+h1, h2, p { margin: 0; }
+h1 { font-size: 25pt; line-height: 1.25; margin: 3pt 0 6pt; }
+h2 { font-size: 12pt; margin: 13pt 0 5pt; break-after: avoid; }
+.project { font-size: 13pt; }
+.meta, .eyebrow { color: var(--muted); font-size: 9pt; margin-top: 4pt; }
+dl { display: grid; grid-template-columns: 30mm 1fr 29mm 1fr; margin: 0; }
+dt, dd { margin: 0; padding: 4pt 3pt; border-bottom: 1px solid #d7dedf; }
+dt { color: var(--muted); }
+.notes { white-space: pre-wrap; orphans: 2; widows: 2; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+thead { background: #e9eff0; }
+th, td { padding: 4pt 5pt; text-align: right; border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; width: 24%; }
+tr { break-inside: avoid; }
+tr.selected { background: #e6f3ec; }
+.figures { break-before: page; }
+figure { margin: 12pt 0 0; padding: 6pt 8pt; border: 1px solid var(--rule); break-inside: avoid; }
+figcaption { font-weight: 650; }
+svg { width: 100%; height: auto; display: block; }
+svg text { fill: var(--muted); font-size: 13px; }
+svg .line { stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
+svg .track, svg .surface { stroke: var(--track); }
+svg .platform { stroke: var(--platform); fill: #dcebf3; }
+svg .platform-line { stroke: var(--platform); }
+svg .plaza { stroke: var(--planned); fill: #ddf0e7; }
+svg .grading { stroke: var(--grading); stroke-dasharray: 4 4; }
+svg .cut { stroke: var(--cut); stroke-dasharray: 7 5; }
+svg .planned { stroke: var(--planned); }
+svg .grid { stroke: #ced7d9; stroke-width: 1; }
+svg .mark { fill: var(--cut); }
+.legend { display: flex; flex-wrap: wrap; gap: 5pt 13pt; font-size: 9pt; }
+.legend span::before { content: ""; display: inline-block; width: 10pt; margin-right: 4pt; border-top: 2px solid var(--key); vertical-align: middle; }
+.track-key { --key: var(--track); }
+.platform-key { --key: var(--platform); }
+.proposed-key { --key: var(--planned); }
+.grading-key { --key: var(--grading); }
+.cut-key { --key: var(--cut); }
