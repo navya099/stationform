@@ -14,23 +14,32 @@ function polyline(svg, points, project, className, closed = false) {
   });
 }
 
-export function drawPlan(svg, study) {
+export function drawPlan(svg, study, alternative) {
   svg.replaceChildren();
   const { track, platform, plaza } = study.plan;
   const { line } = study.section;
-  const points = [...track, ...platform, ...plaza, ...line];
-  const xs = points.map(({ x }) => x);
-  const ys = points.map(({ y }) => y);
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
-  const width = Math.max(...xs) - minX;
-  const height = Math.max(...ys) - minY;
+  let minX = line[0].x;
+  let maxX = minX;
+  let minY = line[0].y;
+  let maxY = minY;
+  const boundaries = study.alternatives.map(({ gradingBoundary }) => gradingBoundary);
+  for (const path of [track, platform, plaza, line, ...boundaries]) {
+    for (const { x, y } of path) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  const width = maxX - minX;
+  const height = maxY - minY;
   const scale = Math.min(628 / Math.max(width, 1), 215 / Math.max(height, 1));
   const project = ({ x, y }) => [
     340 + (x - minX - width / 2) * scale,
     135 - (y - minY - height / 2) * scale,
   ];
   polyline(svg, plaza, project, 'plaza', true);
+  polyline(svg, alternative.gradingBoundary, project, 'grading', true);
   polyline(svg, platform, project, 'platform', true);
   polyline(svg, track, project, 'track');
   polyline(svg, line, project, 'cut');

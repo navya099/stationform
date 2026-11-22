@@ -7,6 +7,7 @@ const ui = Object.fromEntries([
   'section-name', 'plan', 'section', 'volumes', 'rail-level', 'platform-level',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
+const exportButtons = [...document.querySelectorAll('[data-export]')];
 const format = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let study;
 let alternatives = [];
@@ -21,6 +22,12 @@ function updateProjectStatus() {
 
 function studyInput() {
   return [ui.station.valueAsNumber, alternatives.map(({ plazaLevel }) => plazaLevel)];
+}
+
+function updateExportButtons() {
+  const current = study && ui.station.valueAsNumber === study.station.value
+    && alternatives.every(({ plazaLevel }, index) => plazaLevel === study.alternatives[index].plazaLevel);
+  for (const button of exportButtons) button.disabled = !current;
 }
 
 function message(text, error = false) {
@@ -39,7 +46,7 @@ function present() {
   ui['platform-level'].textContent = study ? `${format.format(study.platform.section.level)} m` : '—';
   if (!alternative) return;
 
-  drawPlan(ui.plan, study);
+  drawPlan(ui.plan, study, alternative);
   drawSection(ui.section, study, alternative);
   study.alternatives.forEach(({ name, earthwork }, index) => {
     const row = ui.volumes.insertRow();
@@ -78,7 +85,7 @@ async function run() {
 
 async function task(action) {
   const controls = [ui['open-project'], ui['save-project'], ui['open-source'], ui['open-settings'], ui.sample, ui.station,
-    ui.alternative, ui['plaza-level'], ui.calculate];
+    ui.alternative, ui['plaza-level'], ui.calculate, ...exportButtons];
   for (const control of controls) control.disabled = true;
   try {
     await action();
@@ -90,6 +97,7 @@ async function task(action) {
     for (const control of [ui.station, ui.alternative, ui['plaza-level']]) control.disabled = !files.settings;
     ui.calculate.disabled = !files.source || !files.settings;
     ui['save-project'].disabled = ui.calculate.disabled;
+    updateExportButtons();
   }
 }
 
@@ -123,11 +131,13 @@ ui['plaza-level'].addEventListener('input', () => {
   alternatives[selected].plazaLevel = ui['plaza-level'].valueAsNumber;
   dirty = settingsEdited = true;
   updateProjectStatus();
+  updateExportButtons();
   if (study) message('입력 변경 사항을 반영하려면 계산을 적용하세요.');
 });
 ui.station.addEventListener('input', () => {
   dirty = settingsEdited = true;
   updateProjectStatus();
+  updateExportButtons();
   if (study) message('입력 변경 사항을 반영하려면 계산을 적용하세요.');
 });
 ui['study-form'].addEventListener('submit', (event) => {
@@ -163,5 +173,11 @@ ui['save-project'].addEventListener('click', () => task(async () => {
 window.addEventListener('beforeunload', (event) => {
   if (dirty) event.preventDefault();
 });
+for (const button of exportButtons) {
+  button.addEventListener('click', () => task(async () => {
+    const name = await window.stationForm.exportStudy(button.dataset.export, ...studyInput(), selected);
+    if (name) message(`${name} 파일을 저장했습니다.`);
+  }));
+}
 ui.sample.addEventListener('click', loadSample);
 void loadSample();

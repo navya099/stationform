@@ -38,12 +38,12 @@
     </aside>
     <div class="drawings">
       <section class="sheet">
-        <div class="sheet-heading"><h2>배치 평면</h2><span id="track-name"></span></div>
+        <div class="sheet-heading"><h2>배치 평면</h2><span id="track-name"></span><button type="button" data-export="plan" aria-label="배치 평면 DXF 저장" disabled>DXF 저장</button></div>
         <svg id="plan" viewBox="0 0 680 270" role="img" aria-label="선로, 승강장, 광장 및 횡단 절단선"></svg>
-        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="plaza-key">역전광장</span><span class="cut-key">횡단 절단선</span></div>
+        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="plaza-key">역전광장</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></div>
       </section>
       <section class="sheet">
-        <div class="sheet-heading"><h2>횡단면</h2><span id="section-name"></span></div>
+        <div class="sheet-heading"><h2>횡단면</h2><span id="section-name"></span><button type="button" data-export="section" aria-label="횡단면 DXF 저장" disabled>DXF 저장</button></div>
         <svg id="section" viewBox="0 0 680 240" role="img" aria-label="현황 및 계획 지표면 횡단면"></svg>
         <div class="legend"><span class="ground-key">현황 지표면</span><span class="proposed-key">계획 지표면</span><span class="platform-key">승강장</span></div>
       </section>
@@ -54,6 +54,7 @@
         <thead><tr><th scope="col">대안</th><th scope="col">절토 (m³)</th><th scope="col">성토 (m³)</th></tr></thead>
         <tbody id="volumes"></tbody>
       </table>
+      <button class="table-export" type="button" data-export="earthwork" aria-label="토공량 비교표 CSV 저장" disabled>CSV 저장</button>
       <dl class="levels">
         <dt>레일면 표고</dt><dd id="rail-level">—</dd>
         <dt>승강장 표고</dt><dd id="platform-level">—</dd>

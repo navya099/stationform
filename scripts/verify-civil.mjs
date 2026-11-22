@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { loadCivilCraft } from '../src/civilcraft.mjs';
 import { studySite } from '../src/site-study.mjs';
+import { writeEarthworkCsv, writeStudyDxf } from '../src/study-exports.mjs';
 
 const checkout = process.argv[2];
 if (!checkout) {
@@ -41,6 +42,17 @@ for (const alternative of study.alternatives) {
   assert.ok(alternative.earthwork.fill > 0);
 }
 assert.ok(study.alternatives[1].earthwork.fill > study.alternatives[0].earthwork.fill);
+
+const revision = '1234567890abcdef';
+const planDxf = writeStudyDxf(civil.writeDxf, study, revision, 'plan', 1);
+const sectionDxf = writeStudyDxf(civil.writeDxf, study, revision, 'section', 1);
+const csv = writeEarthworkCsv(study, revision);
+assert.match(planDxf, /AC1009[\s\S]*GRADING_LIMIT[\s\S]*1234567890abcdef/);
+assert.match(sectionDxf, /AC1009[\s\S]*PROPOSED_GROUND[\s\S]*1234567890abcdef/);
+assert.equal(csv.codePointAt(0), 0xfeff);
+assert.equal(csv.trim().split('\r\n').length, 3);
+assert.equal(csv.match(/1234567890abcdef/g).length, 2);
+assert.throws(() => writeStudyDxf(civil.writeDxf, study, revision, 'section', 2), /대안을 선택하세요/);
 
 const leftPlatform = studySite(civil, xml, { ...options, platform: { ...options.platform, edgeOffset: -2 } });
 assert.equal(leftPlatform.platform.section.outerOffset, -8);

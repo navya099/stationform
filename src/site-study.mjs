@@ -102,7 +102,7 @@ export function studySite(civil, xml, options) {
       }
       const earthwork = civil.gridVolume(ground, surface, { cell: volumeCell, region: regions[0] });
       if (!earthwork.cells) throw new Error(`${name} 대안에서 토공량을 산정할 격자가 없습니다.`);
-      return { name, plazaLevel, earthwork, plannedSection: cutSection(surface) };
+      return { name, plazaLevel, earthwork, gradingBoundary: regions[0], plannedSection: cutSection(surface) };
     }),
   };
 }

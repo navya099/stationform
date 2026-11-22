@@ -1,5 +1,5 @@
-import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { writeTextFile } from './local-files.mjs';
 
 const FORMAT = 'stationform';
 const VERSION = 1;
@@ -34,13 +34,5 @@ export async function writeProjectFile(path, { source, settings, selected }) {
   const project = { format: FORMAT, version: VERSION, source, settings, selected };
   validate(project);
 
-  // Stage on the same filesystem so a failed write leaves the previous project in place.
-  const directory = await mkdtemp(join(dirname(path), '.stationform-'));
-  try {
-    const staged = join(directory, 'project');
-    await writeFile(staged, JSON.stringify(project, null, 2) + '\n', 'utf8');
-    await rename(staged, path);
-  } finally {
-    await rm(directory, { force: true, recursive: true });
-  }
+  await writeTextFile(path, JSON.stringify(project, null, 2) + '\n');
 }

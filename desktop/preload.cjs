@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('stationForm', {
   saveProject: (station, levels, selected) => ipcRenderer.invoke('project:save', station, levels, selected),
   confirmDiscard: () => ipcRenderer.invoke('project:discard'),
   run: (station, levels) => ipcRenderer.invoke('study:run', station, levels),
+  exportStudy: (kind, station, levels, selected) => ipcRenderer.invoke('study:export', kind, station, levels, selected),
 });
