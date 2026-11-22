@@ -1,0 +1,13 @@
+{
+  "name": "stationform",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "verify:civil": "node scripts/verify-civil.mjs"
+  },
+  "devDependencies": {
+    "delaunator": "5.1.0",
+    "robust-predicates": "3.0.3"
+  }
+}
