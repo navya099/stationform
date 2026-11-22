@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { registerHooks } from 'node:module';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { loadCivilCraft } from '../src/civilcraft.mjs';
+import { studySite } from '../src/site-study.mjs';
 
 const checkout = process.argv[2];
 if (!checkout) {
@@ -10,64 +9,49 @@ if (!checkout) {
   process.exit(1);
 }
 
-const app = resolve(checkout, 'app');
-const dependencies = new Map(
-  ['delaunator', 'robust-predicates'].map((name) => [name, import.meta.resolve(name)]),
-);
-const hook = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    const url = dependencies.get(specifier);
-    return url ? { url, shortCircuit: true } : nextResolve(specifier, context);
-  },
-});
-const load = (file) => import(pathToFileURL(resolve(app, file)).href);
+const [civil, xml, settings] = await Promise.all([
+  loadCivilCraft(checkout),
+  readFile(new URL('../fixtures/concept-station.xml', import.meta.url), 'utf8'),
+  readFile(new URL('../fixtures/concept-study.json', import.meta.url), 'utf8'),
+]);
+const options = JSON.parse(settings);
+const study = studySite(civil, xml, options);
+assert.deepEqual(study.station, { value: 1050, x: 50, y: 50, railLevel: 13 });
+assert.deepEqual(study.platform.section, { edgeOffset: 2, outerOffset: 8, level: 14.1 });
+assert.deepEqual(study.section.line, [{ x: 50, y: 90 }, { x: 50, y: 50 }, { x: 50, y: 10 }]);
 
-try {
-  const { readLandXml } = await load('landxml.js');
-  const { buildAlignment } = await load('alignment.js');
-  const { buildProfile } = await load('profile.js');
-  const { buildSurface, surfaceFromFaces } = await load('tin.js');
-  const { gradedSurface, gridVolume } = await load('grading.js');
-  const xml = await readFile(new URL('../fixtures/concept-station.xml', import.meta.url), 'utf8');
-  const project = readLandXml(xml);
-  assert.equal(project.units, 'm');
-
-  const [track] = project.alignments;
-  const [terrain] = project.surfaces;
-  assert.ok(track && terrain && track.profiles.length, '선형, 계획 종단, 지표면이 필요합니다.');
-  const alignment = buildAlignment(track);
-  const profile = buildProfile(track.profiles[0].pvis);
-  const { surface: ground } = surfaceFromFaces(terrain);
-  assert.ok(ground, '현황 지표면을 생성하지 못했습니다.');
-
-  const station = 1050;
-  const { x, y } = alignment.pointAt(station);
-  const railLevel = profile.elevationAt(station);
-  assert.equal(x, 50);
-  assert.equal(y, 50);
-  assert.equal(railLevel, 13);
-
-  const plazaX = x;
-  const plazaY = y - 22;
-  const pts = [
-    { x: plazaX - 10, y: plazaY - 8 },
-    { x: plazaX + 10, y: plazaY - 8 },
-    { x: plazaX + 10, y: plazaY + 8 },
-    { x: plazaX - 10, y: plazaY + 8 },
-  ];
-  const alternatives = [11, 12].map((z) => {
-    const pad = { name: '역전광장', pts, z, cut: 2, fill: 2 };
-    const { surface, report } = gradedSurface(ground, terrain.pts, terrain.breaklines, [pad], buildSurface);
-    assert.ok(surface, JSON.stringify(report));
-    assert.ok(Math.abs(surface.elevationAt(plazaX, plazaY) - z) < 1e-8);
-    const { cut, fill, cell } = gridVolume(ground, surface, { cell: 0.5 });
-    // The upstream grid integration can accumulate a small residual near the slope toes.
-    assert.ok(cut < 0.01, `수평 지형 위 성토에서 예상 밖의 절토량이 발생했습니다. ${cut} m³`);
-    assert.ok(fill > 0);
-    return { plazaLevel: z, cut, fill, cell };
-  });
-  assert.ok(alternatives[1].fill > alternatives[0].fill);
-  console.log(JSON.stringify({ units: 'm', station, railLevel, alternatives }, null, 2));
-} finally {
-  hook.deregister();
+function levelAt(runs, offset) {
+  for (const run of runs) {
+    for (let index = 1; index < run.length; index++) {
+      const [a, b] = [run[index - 1], run[index]];
+      if (offset >= a.o && offset <= b.o) return a.z + (b.z - a.z) * (offset - a.o) / (b.o - a.o);
+    }
+  }
+  throw new Error(`횡단면 오프셋 ${offset}의 표고가 없습니다.`);
 }
+
+assert.equal(levelAt(study.section.ground, 22), 10);
+for (const alternative of study.alternatives) {
+  assert.ok(Math.abs(levelAt(alternative.plannedSection, 22) - alternative.plazaLevel) < 1e-8);
+  // Grid integration can accumulate a small residual near the slope toes.
+  assert.ok(alternative.earthwork.cut < 0.01);
+  assert.ok(alternative.earthwork.fill > 0);
+}
+assert.ok(study.alternatives[1].earthwork.fill > study.alternatives[0].earthwork.fill);
+
+const leftPlatform = studySite(civil, xml, { ...options, platform: { ...options.platform, edgeOffset: -2 } });
+assert.equal(leftPlatform.platform.section.outerOffset, -8);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  platform: { ...options.platform, end: 1101 },
+}), /공통 측점 범위/);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  alternatives: [{ name: '범위 밖 사면', plazaLevel: 200 }],
+}), /현황 지표면/);
+
+console.log(JSON.stringify({
+  station: study.station,
+  platformSection: study.platform.section,
+  alternatives: study.alternatives.map(({ name, plazaLevel, earthwork }) => ({ name, plazaLevel, earthwork })),
+}, null, 2));

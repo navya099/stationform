@@ -4,6 +4,7 @@
   "license": "Apache-2.0",
   "engines": { "node": ">=24" },
   "scripts": {
+    "study:civil": "node scripts/study-civil.mjs",
     "verify:civil": "node scripts/verify-civil.mjs"
   },
   "devDependencies": {

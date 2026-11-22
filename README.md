@@ -6,20 +6,23 @@
 
 StationForm의 프로젝트 모델은 선로·측점·계획고, 패밀리 유형과 배치 객체, 설계 대안별 수정값을 관리한다. 도면과 집계는 같은 대안 버전에서 생성한다. 범용 계산과 파일 처리에는 CivilCraft와 BIMCraft 모듈을 우선 검토한다.
 
-## 첫 통합 검증
+## 부지 검토 개발 도구
 
-합성 LandXML에서 직선 선형, 계획 종단과 현황 TIN을 읽는다. 지정 측점의 레일면을 산정하고 광장 계획고를 두 값으로 적용해 계획 지표면과 개략 토공량이 바뀌는지 확인한다. CivilCraft의 계산 모듈을 Node.js에서 직접 실행하는 개발 검증이다.
+미터 단위 LandXML 한 파일에서 선형, 계획 종단과 현황 TIN을 선택한다. 지정 측점의 레일면과 승강장 연단 위치·높이, 현황 및 대안별 계획 횡단면, 개략 절·성토량을 JSON으로 출력한다. 광장 계획고를 바꿔도 대안마다 같은 현황 TIN을 기준으로 계산한다.
 
-Node.js 24와 아래 CivilCraft 리비전의 체크아웃이 필요하다. 최초 의존성 설치를 마치면 검증은 로컬에서 실행된다.
+Node.js 24와 아래 CivilCraft 리비전의 체크아웃이 필요하다. 최초 의존성 설치를 마치면 개발 도구는 로컬에서 실행된다.
 
 ```sh
 git clone https://github.com/getcadcraft/civilcraft.git ../civilcraft
 git -C ../civilcraft checkout a83c0c1011ef1c0d4bb9f2e9c39bc18a4cf016f7
 npm ci
+npm run --silent study:civil -- ../civilcraft fixtures/concept-station.xml fixtures/concept-study.json
 npm run verify:civil -- ../civilcraft
 ```
 
-이 검증은 가상 미터 좌표의 직선 선로와 수평 현황 지형을 사용한다. 실제 지리좌표와 수직 기준, 철도 곡선, 데스크톱 UI 및 산출물은 이후 구현 범위다.
+[샘플 설계 조건](fixtures/concept-study.json)에서 선형·종단·지표면 인덱스는 0부터 시작한다. 오프셋은 측점 증가 방향을 기준으로 우측이 양수이며, 절·성토 사면은 수평 거리와 높이의 비율(H:V)로 입력한다. 토공량은 대안별 사면 접합 경계 안에서 격자로 근사한다.
+
+검증에는 가상 좌표의 직선 선로와 평탄한 지형을 사용한다. 지형과 선형은 공통 좌표·수직 기준으로 준비해야 한다. 승강장 정보는 지정 측점의 개념 배치 기준이며 캔트 보정, 실제 곡선 노선 검증, 데스크톱 UI와 최종 산출물은 이후 구현 범위다.
 
 ## 라이선스
 
