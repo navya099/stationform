@@ -16,6 +16,7 @@ Node.js 24와 아래 CivilCraft 리비전의 체크아웃이 필요하다. 첫 �
 git clone https://github.com/getcadcraft/civilcraft.git ../civilcraft
 git -C ../civilcraft checkout a83c0c1011ef1c0d4bb9f2e9c39bc18a4cf016f7
 npm ci
+npm test
 npm run desktop -- ../civilcraft
 npm run --silent study:civil -- ../civilcraft fixtures/concept-station.xml fixtures/concept-study.json
 npm run verify:civil -- ../civilcraft
@@ -23,9 +24,11 @@ npm run verify:civil -- ../civilcraft
 
 [샘플 설계 조건](fixtures/concept-study.json)에서 선형·종단·지표면 인덱스는 0부터 시작한다. 오프셋은 측점 증가 방향을 기준으로 우측이 양수이며, 절·성토 사면은 수평 거리와 높이의 비율(H:V)로 입력한다. 토공량은 대안별 사면 접합 경계 안에서 격자로 근사한다.
 
-데스크톱 개발판은 샘플을 열어 배치 평면, 횡단면, 대안별 토공량 비교표를 표시한다. 기준 측점이나 선택 대안의 광장 계획고를 바꾼 뒤 **계산 적용**을 누르면 결과가 갱신된다. 자체 파일은 **LandXML 열기**와 **설계 조건 열기**에서 각각 선택한다. 편집한 값은 세션에 보관된다.
+데스크톱 개발판은 샘플을 열어 배치 평면, 횡단면, 대안별 토공량 비교표를 표시한다. 기준 측점이나 선택 대안의 광장 계획고를 바꾼 뒤 **계산 적용**을 누르면 결과가 갱신된다. 자체 파일은 **LandXML 열기**와 **설계 조건 열기**에서 각각 선택한다.
 
-검증에는 가상 좌표의 직선 선로와 평탄한 지형을 사용한다. 지형과 선형은 공통 좌표·수직 기준으로 준비해야 한다. 승강장은 개념 배치이며 캔트 보정, 실제 곡선 노선 검증, 프로젝트 저장, 최종 산출물과 독립 설치 패키징은 이후 구현 범위다.
+**프로젝트 저장**은 LandXML 원본, 편집한 설계 조건과 표시 대안을 하나의 `.stationform` 파일로 저장한다. 처음 저장할 때 경로를 고르고, 이후 저장은 그 파일에 반영한다. **프로젝트 열기**는 저장한 조건을 복원하고 부지 검토 결과를 다시 계산한다. 현재 파일 형식은 버전이 지정된 JSON이다.
+
+검증에는 가상 좌표의 직선 선로와 평탄한 지형을 사용한다. 지형과 선형은 공통 좌표·수직 기준으로 준비해야 한다. 승강장은 개념 배치이며 캔트 보정, 실제 곡선 노선 검증, 최종 산출물과 독립 설치 패키징은 이후 구현 범위다.
 
 ## 라이선스
 

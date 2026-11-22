@@ -11,6 +11,8 @@
 <body>
   <header class="toolbar">
     <div class="brand"><strong>StationForm</strong><span>부지·접근 검토</span></div>
+    <button id="open-project" type="button">프로젝트 열기</button>
+    <button id="save-project" type="button" disabled>프로젝트 저장</button>
     <button id="open-source" type="button">LandXML 열기</button>
     <button id="open-settings" type="button">설계 조건 열기</button>
     <button id="sample" type="button">샘플 열기</button>
@@ -19,6 +21,7 @@
     <aside class="inputs" aria-label="프로젝트와 설계 조건">
       <h1>프로젝트</h1>
       <dl class="files">
+        <dt>프로젝트 파일</dt><dd id="project-name">저장 전</dd>
         <dt>선형·현황 지표면</dt><dd id="source-name">미선택</dd>
         <dt>설계 조건</dt><dd id="settings-name">미선택</dd>
       </dl>

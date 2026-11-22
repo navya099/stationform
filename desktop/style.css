@@ -16,7 +16,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
-.toolbar { display: flex; gap: .55rem; align-items: center; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); background: #141f2b; }
+.toolbar { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); background: #141f2b; }
 .brand { display: flex; align-items: baseline; gap: .75rem; margin-right: auto; }
 .brand strong { font-size: 1.25rem; letter-spacing: -.03em; }
 .brand span, dt, .sheet-heading span, .legend, #status { color: var(--muted); }

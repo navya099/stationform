@@ -6,6 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "test": "node --test",
     "study:civil": "node scripts/study-civil.mjs",
     "verify:civil": "node scripts/verify-civil.mjs",
     "desktop": "electron desktop/main.mjs"
