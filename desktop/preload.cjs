@@ -5,8 +5,10 @@ contextBridge.exposeInMainWorld('stationForm', {
   openSource: () => ipcRenderer.invoke('study:source'),
   openSettings: () => ipcRenderer.invoke('study:settings'),
   openProject: () => ipcRenderer.invoke('project:open'),
-  saveProject: (station, levels, selected, report) => ipcRenderer.invoke('project:save', station, levels, selected, report),
+  saveProject: (station, levels, selected, report, building) =>
+    ipcRenderer.invoke('project:save', station, levels, selected, report, building),
   confirmDiscard: () => ipcRenderer.invoke('project:discard'),
-  run: (station, levels) => ipcRenderer.invoke('study:run', station, levels),
-  exportStudy: (kind, station, levels, selected, report) => ipcRenderer.invoke('study:export', kind, station, levels, selected, report),
+  run: (station, levels, building) => ipcRenderer.invoke('study:run', station, levels, building),
+  exportStudy: (kind, station, levels, selected, report, building) =>
+    ipcRenderer.invoke('study:export', kind, station, levels, selected, report, building),
 });

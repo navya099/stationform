@@ -19,6 +19,16 @@ async function render() {
     ['승강장 폭', `${format(study.platform.width)} m`], ['승강장 표고', `${format(study.platform.section.level)} m`],
     ['선택 대안', alternative.name], ['LandXML', source],
   ];
+  const building = study.stationBuilding;
+  if (building) {
+    overview.push(
+      ['역사 형식', '선상역사 개념 매스'],
+      ['길이 · 폭 · 높이', `${format(building.length)} × ${format(building.width)} × ${format(building.height)} m`],
+      ['바닥 면적', `${format(building.footprintArea)} m²`],
+      ['바닥 · 지붕 표고', `${format(building.floorLevel)} · ${format(building.roofLevel)} m`],
+    );
+    for (const legend of document.querySelectorAll('[data-building-legend]')) legend.hidden = false;
+  }
   for (const [label, value] of overview) {
     const term = document.createElement('dt');
     term.textContent = label;

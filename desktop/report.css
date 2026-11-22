@@ -6,6 +6,7 @@
   --rule: #aebbc0;
   --track: #455b75;
   --platform: #28638c;
+  --building: #7b467d;
   --planned: #18755c;
   --grading: #376f57;
   --cut: #a14e18;
@@ -36,6 +37,7 @@ svg .line { stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
 svg .track, svg .surface { stroke: var(--track); }
 svg .platform { stroke: var(--platform); fill: #dcebf3; }
 svg .platform-line { stroke: var(--platform); }
+svg .station-building { stroke: var(--building); fill: #f1e5f2; fill-opacity: .6; }
 svg .plaza { stroke: var(--planned); fill: #ddf0e7; }
 svg .grading { stroke: var(--grading); stroke-dasharray: 4 4; }
 svg .cut { stroke: var(--cut); stroke-dasharray: 7 5; }
@@ -46,6 +48,7 @@ svg .mark { fill: var(--cut); }
 .legend span::before { content: ""; display: inline-block; width: 10pt; margin-right: 4pt; border-top: 2px solid var(--key); vertical-align: middle; }
 .track-key { --key: var(--track); }
 .platform-key { --key: var(--platform); }
+.building-key { --key: var(--building); }
 .proposed-key { --key: var(--planned); }
 .grading-key { --key: var(--grading); }
 .cut-key { --key: var(--cut); }

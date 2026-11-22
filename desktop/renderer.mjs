@@ -6,9 +6,18 @@ const ui = Object.fromEntries([
   'plaza-level', 'source-name', 'settings-name', 'calculate', 'status', 'track-name',
   'section-name', 'plan', 'section', 'volumes', 'rail-level', 'platform-level',
   'report-intent', 'report-rationale',
+  'building-enabled', 'building-fields', 'building-length', 'building-width', 'building-height',
+  'building-clearance', 'building-summary', 'building-levels', 'building-area',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
+const buildingLegends = document.querySelectorAll('[data-building-legend]');
+const buildingFields = {
+  length: ui['building-length'],
+  width: ui['building-width'],
+  height: ui['building-height'],
+  floorAboveRail: ui['building-clearance'],
+};
 const format = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let study;
 let alternatives = [];
@@ -25,6 +34,17 @@ function studyInput() {
   return [ui.station.valueAsNumber, alternatives.map(({ plazaLevel }) => plazaLevel)];
 }
 
+function readBuilding() {
+  if (!ui['building-enabled'].checked) return null;
+  return Object.fromEntries(Object.entries(buildingFields).map(([key, field]) => [key, field.valueAsNumber]));
+}
+
+function showBuilding(building) {
+  ui['building-enabled'].checked = Boolean(building);
+  ui['building-fields'].hidden = !building;
+  for (const [key, field] of Object.entries(buildingFields)) field.value = building?.[key] ?? field.defaultValue;
+}
+
 function readReportNotes() {
   return { intent: ui['report-intent'].value, rationale: ui['report-rationale'].value };
 }
@@ -35,7 +55,12 @@ function showReportNotes(notes) {
 }
 
 function updateExportButtons() {
+  const building = readBuilding();
+  const sameBuilding = building
+    ? Object.entries(building).every(([key, value]) => value === study?.stationBuilding?.[key])
+    : !study?.stationBuilding;
   const current = study && ui.station.valueAsNumber === study.station.value
+    && sameBuilding
     && alternatives.every(({ plazaLevel }, index) => plazaLevel === study.alternatives[index].plazaLevel);
   for (const button of exportButtons) button.disabled = !current;
 }
@@ -54,6 +79,13 @@ function present() {
   ui['section-name'].textContent = alternative ? `A–A · ${study.station.value} m · 대안 ${alternative.name}` : '';
   ui['rail-level'].textContent = study ? `${format.format(study.station.railLevel)} m` : '—';
   ui['platform-level'].textContent = study ? `${format.format(study.platform.section.level)} m` : '—';
+  const building = study?.stationBuilding;
+  ui['building-summary'].hidden = !building;
+  for (const legend of buildingLegends) legend.hidden = !building;
+  if (building) {
+    ui['building-levels'].textContent = `${format.format(building.floorLevel)} · ${format.format(building.roofLevel)} m`;
+    ui['building-area'].textContent = `${format.format(building.footprintArea)} m²`;
+  }
   if (!alternative) return;
 
   drawPlan(ui.plan, study, alternative);
@@ -76,6 +108,7 @@ function showSettings(result) {
   selected = result.selected ?? 0;
   ui.alternative.value = selected;
   ui['plaza-level'].value = alternatives[selected].plazaLevel ?? '';
+  showBuilding(result.stationBuilding);
   settingsEdited = false;
 }
 
@@ -88,14 +121,15 @@ async function run() {
   study = undefined;
   present();
   message('계산 중');
-  study = await window.stationForm.run(...studyInput());
+  study = await window.stationForm.run(...studyInput(), readBuilding());
   present();
   message('계산 완료');
 }
 
 async function task(action) {
   const controls = [ui['open-project'], ui['save-project'], ui['open-source'], ui['open-settings'], ui.sample, ui.station,
-    ui.alternative, ui['plaza-level'], ui.calculate, ui['report-intent'], ui['report-rationale'], ...exportButtons];
+    ui.alternative, ui['plaza-level'], ui.calculate, ui['report-intent'], ui['report-rationale'],
+    ui['building-enabled'], ui['building-fields'], ...exportButtons];
   for (const control of controls) control.disabled = true;
   try {
     await action();
@@ -105,6 +139,8 @@ async function task(action) {
     updateProjectStatus();
     for (const control of controls) control.disabled = false;
     for (const control of [ui.station, ui.alternative, ui['plaza-level']]) control.disabled = !files.settings;
+    ui['building-enabled'].disabled = !files.settings;
+    ui['building-fields'].disabled = !files.settings || !ui['building-enabled'].checked;
     ui.calculate.disabled = !files.source || !files.settings;
     ui['save-project'].disabled = ui.calculate.disabled;
     updateExportButtons();
@@ -137,19 +173,23 @@ ui.alternative.addEventListener('change', () => {
   dirty = true;
   updateProjectStatus();
 });
+function studyChanged() {
+  dirty = settingsEdited = true;
+  updateProjectStatus();
+  updateExportButtons();
+  if (study) message('입력 변경 사항을 반영하려면 계산을 적용하세요.');
+}
+
 ui['plaza-level'].addEventListener('input', () => {
   alternatives[selected].plazaLevel = ui['plaza-level'].valueAsNumber;
-  dirty = settingsEdited = true;
-  updateProjectStatus();
-  updateExportButtons();
-  if (study) message('입력 변경 사항을 반영하려면 계산을 적용하세요.');
+  studyChanged();
 });
-ui.station.addEventListener('input', () => {
-  dirty = settingsEdited = true;
-  updateProjectStatus();
-  updateExportButtons();
-  if (study) message('입력 변경 사항을 반영하려면 계산을 적용하세요.');
+ui.station.addEventListener('input', studyChanged);
+ui['building-enabled'].addEventListener('change', () => {
+  ui['building-fields'].hidden = ui['building-fields'].disabled = !ui['building-enabled'].checked;
+  studyChanged();
 });
+for (const field of Object.values(buildingFields)) field.addEventListener('input', studyChanged);
 ui['study-form'].addEventListener('submit', (event) => {
   event.preventDefault();
   if (files.source && files.settings) void task(run);
@@ -176,7 +216,7 @@ ui['open-project'].addEventListener('click', () => task(async () => {
   await run();
 }));
 ui['save-project'].addEventListener('click', () => task(async () => {
-  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes());
+  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes(), readBuilding());
   if (!name) return;
   projectName = name;
   dirty = settingsEdited = false;
@@ -193,7 +233,9 @@ for (const field of [ui['report-intent'], ui['report-rationale']]) {
 }
 for (const button of exportButtons) {
   button.addEventListener('click', () => task(async () => {
-    const name = await window.stationForm.exportStudy(button.dataset.export, ...studyInput(), selected, readReportNotes());
+    const name = await window.stationForm.exportStudy(
+      button.dataset.export, ...studyInput(), selected, readReportNotes(), readBuilding(),
+    );
     if (name) message(`${name} 파일을 저장했습니다.`);
   }));
 }

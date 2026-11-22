@@ -32,6 +32,16 @@
         <select id="alternative" required></select>
         <label for="plaza-level">광장 계획고 (m)</label>
         <input id="plaza-level" type="number" step="any" required>
+        <fieldset class="building-controls">
+          <legend>역사 본체</legend>
+          <label class="building-toggle"><input id="building-enabled" type="checkbox" disabled>선상역사 매스</label>
+          <fieldset id="building-fields" hidden disabled aria-label="선상역사 치수">
+            <label for="building-length">길이 (m)</label><input id="building-length" type="number" step="any" value="24" required>
+            <label for="building-width">폭 (m)</label><input id="building-width" type="number" step="any" value="20" required>
+            <label for="building-height">높이 (m)</label><input id="building-height" type="number" step="any" value="6" required>
+            <label for="building-clearance">레일면 대비 바닥 높이 (m)</label><input id="building-clearance" type="number" step="any" value="8" required>
+          </fieldset>
+        </fieldset>
         <button class="primary" type="submit" id="calculate" disabled>계산 적용</button>
       </form>
       <p id="status" role="status">샘플을 열거나 LandXML과 설계 조건을 선택하세요.</p>
@@ -40,12 +50,12 @@
       <section class="sheet">
         <div class="sheet-heading"><h2>배치 평면</h2><span id="track-name"></span><button type="button" data-export="plan" aria-label="배치 평면 DXF 저장" disabled>DXF 저장</button></div>
         <svg id="plan" viewBox="0 0 680 270" role="img" aria-label="선로, 승강장, 광장 및 횡단 절단선"></svg>
-        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="plaza-key">역전광장</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></div>
+        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="building-key" data-building-legend hidden>역사 본체</span><span class="plaza-key">역전광장</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></div>
       </section>
       <section class="sheet">
         <div class="sheet-heading"><h2>횡단면</h2><span id="section-name"></span><button type="button" data-export="section" aria-label="횡단면 DXF 저장" disabled>DXF 저장</button></div>
         <svg id="section" viewBox="0 0 680 240" role="img" aria-label="현황 및 계획 지표면 횡단면"></svg>
-        <div class="legend"><span class="ground-key">현황 지표면</span><span class="proposed-key">계획 지표면</span><span class="platform-key">승강장</span></div>
+        <div class="legend"><span class="ground-key">현황 지표면</span><span class="proposed-key">계획 지표면</span><span class="platform-key">승강장</span><span class="building-key" data-building-legend hidden>역사 본체</span></div>
       </section>
     </div>
     <aside class="results" aria-label="대안별 토공량">
@@ -58,6 +68,10 @@
       <dl class="levels">
         <dt>레일면 표고</dt><dd id="rail-level">—</dd>
         <dt>승강장 표고</dt><dd id="platform-level">—</dd>
+        <div id="building-summary" hidden>
+          <dt>역사 바닥 · 지붕 표고</dt><dd id="building-levels"></dd>
+          <dt>역사 바닥 면적</dt><dd id="building-area"></dd>
+        </div>
       </dl>
       <section class="report-tools">
         <h2>건축설계설명서</h2>

@@ -1,3 +1,5 @@
+import { buildStationMass } from './station-mass.mjs';
+
 function select(items, index, label) {
   if (!Number.isInteger(index) || index < 0 || index >= items.length) {
     throw new RangeError(`${label} 인덱스가 범위를 벗어났습니다.`);
@@ -15,7 +17,6 @@ function offsetPoint(reference, offset) {
     y: reference.y - Math.cos(reference.dir) * offset,
   };
 }
-
 export function studySite(civil, xml, options) {
   const { trackIndex, profileIndex, surfaceIndex, station, platform, section, plaza, alternatives, volumeCell } = options;
   const project = civil.readLandXml(xml);
@@ -42,8 +43,8 @@ export function studySite(civil, xml, options) {
     || platform.edgeOffset === 0) {
     throw new RangeError('승강장 측점 구간, 연단 오프셋 및 높이를 확인하세요.');
   }
-  if (platform.start < Math.max(alignment.start, profile.start)
-    || platform.end > Math.min(alignment.end, profile.end)) {
+  const range = { start: Math.max(alignment.start, profile.start), end: Math.min(alignment.end, profile.end) };
+  if (platform.start < range.start || platform.end > range.end) {
     throw new RangeError('승강장이 선형과 계획 종단의 공통 측점 범위를 벗어났습니다.');
   }
   if (!Array.isArray(plaza.boundary) || plaza.boundary.length < 3
@@ -61,6 +62,7 @@ export function studySite(civil, xml, options) {
 
   const reference = alignment.pointAt(station);
   const railLevel = profile.elevationAt(station);
+  const stationBuilding = buildStationMass(options.stationBuilding, reference, railLevel, station, range, section);
   const { x, y } = reference;
   const line = [offsetPoint(reference, -section.left), { x, y }, offsetPoint(reference, section.right)];
   const cutSection = (surface) => civil.cutSection(surface, line, { origin: section.left }).runs;
@@ -75,6 +77,7 @@ export function studySite(civil, xml, options) {
     units: { length: 'm', area: 'm²', volume: 'm³' },
     track: { name: track.name, profile: profileInput.name },
     station: { value: station, x, y, railLevel },
+    ...(stationBuilding && { stationBuilding }),
     plan: {
       track: planPoints.map(({ x, y }) => ({ x, y })),
       platform: [

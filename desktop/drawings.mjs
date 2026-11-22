@@ -18,12 +18,13 @@ export function drawPlan(svg, study, alternative) {
   svg.replaceChildren();
   const { track, platform, plaza } = study.plan;
   const { line } = study.section;
+  const footprint = study.stationBuilding?.footprint ?? [];
   let minX = line[0].x;
   let maxX = minX;
   let minY = line[0].y;
   let maxY = minY;
   const boundaries = study.alternatives.map(({ gradingBoundary }) => gradingBoundary);
-  for (const path of [track, platform, plaza, line, ...boundaries]) {
+  for (const path of [track, platform, plaza, line, footprint, ...boundaries]) {
     for (const { x, y } of path) {
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
@@ -41,6 +42,7 @@ export function drawPlan(svg, study, alternative) {
   polyline(svg, plaza, project, 'plaza', true);
   polyline(svg, alternative.gradingBoundary, project, 'grading', true);
   polyline(svg, platform, project, 'platform', true);
+  if (footprint.length) polyline(svg, footprint, project, 'station-building', true);
   polyline(svg, track, project, 'track');
   polyline(svg, line, project, 'cut');
   for (const end of [line[0], line.at(-1)]) {
@@ -56,6 +58,7 @@ export function drawSection(svg, study, alternative) {
   const ground = study.section.ground;
   const planned = alternative.plannedSection;
   const platform = study.platform.section;
+  const building = study.stationBuilding?.section ?? [];
   const railLevel = study.station.railLevel;
   const platformEnds = [
     { o: platform.edgeOffset, z: platform.level },
@@ -66,7 +69,7 @@ export function drawSection(svg, study, alternative) {
   let minZ = railLevel;
   let maxZ = railLevel;
   const allPlanned = study.alternatives.flatMap(({ plannedSection }) => plannedSection);
-  for (const run of [...ground, ...allPlanned, platformEnds]) {
+  for (const run of [...ground, ...allPlanned, platformEnds, building]) {
     for (const { o, z } of run) {
       minO = Math.min(minO, o);
       maxO = Math.max(maxO, o);
@@ -89,6 +92,7 @@ export function drawSection(svg, study, alternative) {
   }
   for (const run of ground) polyline(svg, run, project, 'surface');
   for (const run of planned) polyline(svg, run, project, 'planned');
+  if (building.length) polyline(svg, building, project, 'station-building', true);
   polyline(svg, platformEnds, project, 'platform-line');
   const [cx, cy] = project({ o: 0, z: railLevel });
   draw(svg, 'circle', { cx, cy, r: 4, class: 'mark' });

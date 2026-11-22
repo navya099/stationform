@@ -23,6 +23,22 @@ assert.deepEqual(study.section.line, [{ x: 50, y: 90 }, { x: 50, y: 50 }, { x: 5
 assert.deepEqual(study.plan.track.at(0), { x: 20, y: 50 });
 assert.deepEqual(study.plan.platform.at(0), { x: 20, y: 48 });
 assert.deepEqual(study.plan.platform.at(-1), { x: 20, y: 42 });
+assert.deepEqual(study.stationBuilding.footprint, [
+  { x: 38, y: 60 }, { x: 38, y: 40 }, { x: 62, y: 40 }, { x: 62, y: 60 },
+]);
+assert.deepEqual(study.stationBuilding.section, [
+  { o: -10, z: 21 }, { o: 10, z: 21 }, { o: 10, z: 27 }, { o: -10, z: 27 },
+]);
+assert.equal(study.stationBuilding.footprintArea, 480);
+assert.equal(studySite(civil, xml, { ...options, stationBuilding: undefined }).stationBuilding, undefined);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  stationBuilding: { ...options.stationBuilding, width: -1 },
+}), /선상역사 폭/);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  stationBuilding: { ...options.stationBuilding, length: 110 },
+}), /역사 본체가 선형과 계획 종단의 공통 측점 범위/);
 
 function levelAt(runs, offset) {
   for (const run of runs) {
@@ -49,6 +65,8 @@ const sectionDxf = writeStudyDxf(civil.writeDxf, study, revision, 'section', 1);
 const csv = writeEarthworkCsv(study, revision);
 assert.match(planDxf, /AC1009[\s\S]*GRADING_LIMIT[\s\S]*1234567890abcdef/);
 assert.match(sectionDxf, /AC1009[\s\S]*PROPOSED_GROUND[\s\S]*1234567890abcdef/);
+assert.match(planDxf, /STATION_BUILDING/);
+assert.match(sectionDxf, /STATION_BUILDING/);
 assert.equal(csv.codePointAt(0), 0xfeff);
 assert.equal(csv.trim().split('\r\n').length, 3);
 assert.equal(csv.match(/1234567890abcdef/g).length, 2);

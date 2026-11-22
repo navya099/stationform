@@ -7,6 +7,7 @@ import { loadCivilCraft } from '../src/civilcraft.mjs';
 import { writeLocalFile } from '../src/local-files.mjs';
 import { readProjectFile, reportNotes, writeProjectFile } from '../src/project-file.mjs';
 import { studySite } from '../src/site-study.mjs';
+import { stationBuildingInput } from '../src/station-mass.mjs';
 import { writeEarthworkCsv, writeStudyDxf } from '../src/study-exports.mjs';
 import { createStudyPdf } from './report-pdf.mjs';
 
@@ -85,21 +86,25 @@ function openWindow(engine) {
     return {
       settings: name,
       station: options.station,
+      stationBuilding: options.stationBuilding,
       alternatives: options.alternatives.map(({ name, plazaLevel }) => ({ name, plazaLevel })),
     };
   };
-  const updatedOptions = (station, levels) => {
+  const updatedOptions = (station, levels, building) => {
     if (!source || !settings) throw new Error('LandXML과 설계 조건을 먼저 여세요.');
     const { options } = settings;
     if (!Number.isFinite(station) || !Array.isArray(levels) || levels.length !== options.alternatives.length
       || !levels.every(Number.isFinite)) {
       throw new Error('측점과 모든 대안의 광장 계획고를 입력하세요.');
     }
-    return {
+    const updated = {
       ...options,
       station,
       alternatives: options.alternatives.map((alternative, index) => ({ ...alternative, plazaLevel: levels[index] })),
     };
+    if (building === null) delete updated.stationBuilding;
+    else if (building !== undefined) updated.stationBuilding = stationBuildingInput(building);
+    return updated;
   };
   const confirmDiscard = () => dialog.showMessageBoxSync(window, {
     type: 'warning',
@@ -140,19 +145,19 @@ function openWindow(engine) {
     lastStudy = undefined;
     return result;
   });
-  handle('study:run', (station, levels) => {
+  handle('study:run', (station, levels, building) => {
     lastStudy = undefined;
-    const options = updatedOptions(station, levels);
+    const options = updatedOptions(station, levels, building);
     const result = studySite(engine, source.content, options);
     const input = JSON.stringify(options);
     const revision = createHash('sha256').update(source.content).update('\0').update(input).digest('hex').slice(0, 16);
     lastStudy = { result, input, revision };
     return result;
   });
-  handle('study:export', async (kind, station, levels, selected, report) => {
+  handle('study:export', async (kind, station, levels, selected, report, building) => {
     const format = exportFormats.get(kind);
     if (!format) throw new Error('지원하지 않는 내보내기 형식입니다.');
-    const input = JSON.stringify(updatedOptions(station, levels));
+    const input = JSON.stringify(updatedOptions(station, levels, building));
     if (!lastStudy || lastStudy.input !== input) throw new Error('계산을 적용한 뒤 내보내세요.');
     const { result, revision } = lastStudy;
     if (kind !== 'earthwork' && (!Number.isInteger(selected) || !result.alternatives[selected])) {
@@ -191,8 +196,8 @@ function openWindow(engine) {
     lastStudy = undefined;
     return result;
   });
-  handle('project:save', async (station, levels, selected, report) => {
-    const options = updatedOptions(station, levels);
+  handle('project:save', async (station, levels, selected, report, building) => {
+    const options = updatedOptions(station, levels, building);
     let path = projectPath;
     if (!path) {
       const base = basename(source.name).replace(/\.(?:landxml|xml)$/i, '');
