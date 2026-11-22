@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';">
+  <title>StationForm</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./renderer.mjs"></script>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand"><strong>StationForm</strong><span>부지·접근 검토</span></div>
+    <button id="open-source" type="button">LandXML 열기</button>
+    <button id="open-settings" type="button">설계 조건 열기</button>
+    <button id="sample" type="button">샘플 열기</button>
+  </header>
+  <main class="workspace">
+    <aside class="inputs" aria-label="프로젝트와 설계 조건">
+      <h1>프로젝트</h1>
+      <dl class="files">
+        <dt>선형·현황 지표면</dt><dd id="source-name">미선택</dd>
+        <dt>설계 조건</dt><dd id="settings-name">미선택</dd>
+      </dl>
+      <form id="study-form">
+        <label for="station">기준 측점 (m)</label>
+        <input id="station" type="number" step="any" required>
+        <label for="alternative">표시 대안</label>
+        <select id="alternative" required></select>
+        <label for="plaza-level">광장 계획고 (m)</label>
+        <input id="plaza-level" type="number" step="any" required>
+        <button class="primary" type="submit" id="calculate" disabled>계산 적용</button>
+      </form>
+      <p id="status" role="status">샘플을 열거나 LandXML과 설계 조건을 선택하세요.</p>
+    </aside>
+    <div class="drawings">
+      <section class="sheet">
+        <div class="sheet-heading"><h2>배치 평면</h2><span id="track-name"></span></div>
+        <svg id="plan" viewBox="0 0 680 270" role="img" aria-label="선로, 승강장, 광장 및 횡단 절단선"></svg>
+        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="plaza-key">역전광장</span><span class="cut-key">횡단 절단선</span></div>
+      </section>
+      <section class="sheet">
+        <div class="sheet-heading"><h2>횡단면</h2><span id="section-name"></span></div>
+        <svg id="section" viewBox="0 0 680 240" role="img" aria-label="현황 및 계획 지표면 횡단면"></svg>
+        <div class="legend"><span class="ground-key">현황 지표면</span><span class="proposed-key">계획 지표면</span><span class="platform-key">승강장</span></div>
+      </section>
+    </div>
+    <aside class="results" aria-label="대안별 토공량">
+      <h2>토공량 비교</h2>
+      <table>
+        <thead><tr><th scope="col">대안</th><th scope="col">절토 (m³)</th><th scope="col">성토 (m³)</th></tr></thead>
+        <tbody id="volumes"></tbody>
+      </table>
+      <dl class="levels">
+        <dt>레일면 표고</dt><dd id="rail-level">—</dd>
+        <dt>승강장 표고</dt><dd id="platform-level">—</dd>
+      </dl>
+    </aside>
+  </main>
+</body>
+</html>

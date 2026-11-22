@@ -2,13 +2,17 @@
   "name": "stationform",
   "private": true,
   "license": "Apache-2.0",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "study:civil": "node scripts/study-civil.mjs",
-    "verify:civil": "node scripts/verify-civil.mjs"
+    "verify:civil": "node scripts/verify-civil.mjs",
+    "desktop": "electron desktop/main.mjs"
   },
   "devDependencies": {
     "delaunator": "5.1.0",
+    "electron": "45.4.1",
     "robust-predicates": "3.0.3"
   }
 }

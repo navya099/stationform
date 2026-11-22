@@ -19,6 +19,9 @@ const study = studySite(civil, xml, options);
 assert.deepEqual(study.station, { value: 1050, x: 50, y: 50, railLevel: 13 });
 assert.deepEqual(study.platform.section, { edgeOffset: 2, outerOffset: 8, level: 14.1 });
 assert.deepEqual(study.section.line, [{ x: 50, y: 90 }, { x: 50, y: 50 }, { x: 50, y: 10 }]);
+assert.deepEqual(study.plan.track.at(0), { x: 20, y: 50 });
+assert.deepEqual(study.plan.platform.at(0), { x: 20, y: 48 });
+assert.deepEqual(study.plan.platform.at(-1), { x: 20, y: 42 });
 
 function levelAt(runs, offset) {
   for (const run of runs) {

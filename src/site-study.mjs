@@ -67,11 +67,22 @@ export function studySite(civil, xml, options) {
   const groundSection = cutSection(ground);
   if (!groundSection.length) throw new Error('지정 횡단면이 현황 지표면과 만나지 않습니다.');
   const outerOffset = platform.edgeOffset + Math.sign(platform.edgeOffset) * platform.width;
+  const segmentCount = Math.min(200, Math.ceil((platform.end - platform.start) / 5));
+  const planPoints = Array.from({ length: segmentCount + 1 }, (_, index) =>
+    alignment.pointAt(platform.start + (platform.end - platform.start) * index / segmentCount));
 
   return {
     units: { length: 'm', area: 'm²', volume: 'm³' },
     track: { name: track.name, profile: profileInput.name },
     station: { value: station, x, y, railLevel },
+    plan: {
+      track: planPoints.map(({ x, y }) => ({ x, y })),
+      platform: [
+        ...planPoints.map((point) => offsetPoint(point, platform.edgeOffset)),
+        ...planPoints.map((point) => offsetPoint(point, outerOffset)).reverse(),
+      ],
+      plaza: plaza.boundary,
+    },
     platform: {
       ...platform,
       section: {
