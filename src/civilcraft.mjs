@@ -29,7 +29,8 @@ export async function loadCivilCraft(checkout) {
     const { gradedSurface, gridVolume } = await load('grading.js');
     const { cutSection } = await load('terrain-section.js');
     const { writeDxf } = await load('dxf.js');
-    return { readLandXml, buildAlignment, buildProfile, buildSurface, surfaceFromFaces, gradedSurface, gridVolume, cutSection, writeDxf };
+    const { writeCivilIfc } = await load('ifc-civil.js');
+    return { readLandXml, buildAlignment, buildProfile, buildSurface, surfaceFromFaces, gradedSurface, gridVolume, cutSection, writeDxf, writeCivilIfc };
   } finally {
     hook.deregister();
   }

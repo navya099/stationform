@@ -6,9 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { loadCivilCraft } from '../src/civilcraft.mjs';
 import { writeLocalFile } from '../src/local-files.mjs';
 import { readProjectFile, reportNotes, writeProjectFile } from '../src/project-file.mjs';
-import { studySite } from '../src/site-study.mjs';
+import { calculateSiteStudy } from '../src/site-study.mjs';
 import { stationBuildingInput } from '../src/station-mass.mjs';
 import { writeEarthworkCsv, writeStudyDxf } from '../src/study-exports.mjs';
+import { writeStudyIfc } from '../src/study-ifc.mjs';
 import { createStudyPdf } from './report-pdf.mjs';
 
 const checkout = process.env.STATIONFORM_CIVILCRAFT || process.argv[2];
@@ -19,6 +20,7 @@ const exportFormats = new Map([
   ['plan', { label: '배치 평면', extension: 'dxf' }],
   ['section', { label: '횡단면', extension: 'dxf' }],
   ['earthwork', { label: '토공량 비교표', extension: 'csv' }],
+  ['model', { label: '개념 모델', extension: 'ifc' }],
   ['report', { label: '건축설계설명서', extension: 'pdf' }],
 ]);
 
@@ -148,18 +150,19 @@ function openWindow(engine) {
   handle('study:run', (station, levels, building) => {
     lastStudy = undefined;
     const options = updatedOptions(station, levels, building);
-    const result = studySite(engine, source.content, options);
+    const calculation = calculateSiteStudy(engine, source.content, options);
     const input = JSON.stringify(options);
     const revision = createHash('sha256').update(source.content).update('\0').update(input).digest('hex').slice(0, 16);
-    lastStudy = { result, input, revision };
-    return result;
+    lastStudy = { calculation, input, revision };
+    return calculation.study;
   });
   handle('study:export', async (kind, station, levels, selected, report, building) => {
     const format = exportFormats.get(kind);
     if (!format) throw new Error('지원하지 않는 내보내기 형식입니다.');
     const input = JSON.stringify(updatedOptions(station, levels, building));
     if (!lastStudy || lastStudy.input !== input) throw new Error('계산을 적용한 뒤 내보내세요.');
-    const { result, revision } = lastStudy;
+    const { calculation, revision } = lastStudy;
+    const result = calculation.study;
     if (kind !== 'earthwork' && (!Number.isInteger(selected) || !result.alternatives[selected])) {
       throw new Error('내보낼 대안을 선택하세요.');
     }
@@ -174,6 +177,8 @@ function openWindow(engine) {
       data = await createStudyPdf({ study: result, revision, selected, notes, project: stem, source: source.name });
     } else if (kind === 'earthwork') {
       data = writeEarthworkCsv(result, revision);
+    } else if (kind === 'model') {
+      data = writeStudyIfc(engine.writeCivilIfc, calculation, selected, { name: basename(path, `.${ext}`), revision });
     } else {
       data = writeStudyDxf(engine.writeDxf, result, revision, kind, selected);
     }

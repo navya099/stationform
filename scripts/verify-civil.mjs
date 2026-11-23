@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { loadCivilCraft } from '../src/civilcraft.mjs';
-import { studySite } from '../src/site-study.mjs';
+import { calculateSiteStudy, studySite } from '../src/site-study.mjs';
 import { writeEarthworkCsv, writeStudyDxf } from '../src/study-exports.mjs';
+import { writeStudyIfc } from '../src/study-ifc.mjs';
 
 const checkout = process.argv[2];
 if (!checkout) {
@@ -16,7 +17,8 @@ const [civil, xml, settings] = await Promise.all([
   readFile(new URL('../fixtures/concept-study.json', import.meta.url), 'utf8'),
 ]);
 const options = JSON.parse(settings);
-const study = studySite(civil, xml, options);
+const calculation = calculateSiteStudy(civil, xml, options);
+const { study } = calculation;
 assert.deepEqual(study.station, { value: 1050, x: 50, y: 50, railLevel: 13 });
 assert.deepEqual(study.platform.section, { edgeOffset: 2, outerOffset: 8, level: 14.1 });
 assert.deepEqual(study.section.line, [{ x: 50, y: 90 }, { x: 50, y: 50 }, { x: 50, y: 10 }]);
@@ -88,6 +90,15 @@ const revision = '1234567890abcdef';
 const planDxf = writeStudyDxf(civil.writeDxf, study, revision, 'plan', 1);
 const sectionDxf = writeStudyDxf(civil.writeDxf, study, revision, 'section', 1);
 const csv = writeEarthworkCsv(study, revision);
+const ifc = writeStudyIfc(civil.writeCivilIfc, calculation, 1, { name: 'StationForm', revision });
+assert.match(ifc, /FILE_SCHEMA\(\('IFC4X3_ADD2'\)\)/);
+assert.match(ifc, /IFCBUILDINGELEMENTPROXY\(/);
+assert.match(ifc, /IFCSLAB\(/);
+assert.match(ifc, /IFCTRIANGULATEDIRREGULARNETWORK\(/);
+assert.match(ifc, /'CalculationId',\$,IFCLABEL\('1234567890abcdef'\)/);
+assert.match(ifc, /'Alternative',\$,IFCLABEL\('B'\)/);
+assert.match(ifc, /'PlazaLevel',\$,IFCLENGTHMEASURE\(12\.\)/);
+assert.throws(() => writeStudyIfc(civil.writeCivilIfc, calculation, 2, { name: 'StationForm', revision }), /대안을 선택하세요/);
 assert.match(planDxf, /AC1009[\s\S]*GRADING_LIMIT[\s\S]*1234567890abcdef/);
 assert.match(sectionDxf, /AC1009[\s\S]*PROPOSED_GROUND[\s\S]*1234567890abcdef/);
 assert.match(planDxf, /STATION_BUILDING/);

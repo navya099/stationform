@@ -18,6 +18,10 @@ function offsetPoint(reference, offset) {
   };
 }
 export function studySite(civil, xml, options) {
+  return calculateSiteStudy(civil, xml, options).study;
+}
+
+export function calculateSiteStudy(civil, xml, options) {
   const { trackIndex, profileIndex, surfaceIndex, station, platform, section, plaza, alternatives, volumeCell } = options;
   const project = civil.readLandXml(xml);
   if (project.units !== 'm') throw new Error('미터 단위 LandXML이 필요합니다.');
@@ -72,19 +76,29 @@ export function studySite(civil, xml, options) {
   if (!groundSection.length) throw new Error('지정 횡단면이 현황 지표면과 만나지 않습니다.');
   const outerOffset = platform.edgeOffset + Math.sign(platform.edgeOffset) * platform.width;
   const segmentCount = Math.min(200, Math.ceil((platform.end - platform.start) / 5));
-  const planPoints = Array.from({ length: segmentCount + 1 }, (_, index) =>
-    alignment.pointAt(platform.start + (platform.end - platform.start) * index / segmentCount));
+  const planPoints = Array.from({ length: segmentCount + 1 }, (_, index) => {
+    const distance = platform.start + (platform.end - platform.start) * index / segmentCount;
+    const height = profile.elevationAt(distance) + platform.heightAboveRail;
+    const point = alignment.pointAt(distance);
+    return {
+      point,
+      near: { ...offsetPoint(point, platform.edgeOffset), z: height },
+      far: { ...offsetPoint(point, outerOffset), z: height },
+    };
+  });
+  const xy = ({ x, y }) => ({ x, y });
+  const proposedSurfaces = [];
 
-  return {
+  const study = {
     units: { length: 'm', area: 'm²', volume: 'm³' },
     track: { name: track.name, profile: profileInput.name },
     station: { value: station, x, y, railLevel },
     ...(stationBuilding && { stationBuilding }),
     plan: {
-      track: planPoints.map(({ x, y }) => ({ x, y })),
+      track: planPoints.map(({ point }) => xy(point)),
       platform: [
-        ...planPoints.map((point) => offsetPoint(point, platform.edgeOffset)),
-        ...planPoints.map((point) => offsetPoint(point, outerOffset)).reverse(),
+        ...planPoints.map(({ near }) => xy(near)),
+        ...planPoints.map(({ far }) => xy(far)).reverse(),
       ],
       plaza: plaza.boundary,
     },
@@ -107,7 +121,9 @@ export function studySite(civil, xml, options) {
       }
       const earthwork = civil.gridVolume(ground, surface, { cell: volumeCell, region: regions[0] });
       if (!earthwork.cells) throw new Error(`${name} 대안에서 토공량을 산정할 격자가 없습니다.`);
+      proposedSurfaces.push(surface);
       return { name, plazaLevel, earthwork, gradingBoundary: regions[0], plannedSection: cutSection(surface) };
     }),
   };
+  return { study, proposedSurfaces, platformDeck: planPoints, sourceCrs: project.coordinateSystem };
 }
