@@ -86,7 +86,7 @@ function openWindow(engine) {
     return {
       settings: name,
       station: options.station,
-      stationBuilding: options.stationBuilding,
+      stationBuilding: options.stationBuilding == null ? undefined : stationBuildingInput(options.stationBuilding),
       alternatives: options.alternatives.map(({ name, plazaLevel }) => ({ name, plazaLevel })),
     };
   };

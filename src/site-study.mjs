@@ -62,8 +62,10 @@ export function studySite(civil, xml, options) {
 
   const reference = alignment.pointAt(station);
   const railLevel = profile.elevationAt(station);
-  const stationBuilding = buildStationMass(options.stationBuilding, reference, railLevel, station, range, section);
   const { x, y } = reference;
+  const stationBuilding = buildStationMass(
+    options.stationBuilding, reference, railLevel, station, range, section, ground.elevationAt(x, y),
+  );
   const line = [offsetPoint(reference, -section.left), { x, y }, offsetPoint(reference, section.right)];
   const cutSection = (surface) => civil.cutSection(surface, line, { origin: section.left }).runs;
   const groundSection = cutSection(ground);

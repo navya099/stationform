@@ -22,7 +22,7 @@ async function render() {
   const building = study.stationBuilding;
   if (building) {
     overview.push(
-      ['역사 형식', '선상역사 개념 매스'],
+      ['역사 형식', `${building.label} 개념 매스`],
       ['길이 · 폭 · 높이', `${format(building.length)} × ${format(building.width)} × ${format(building.height)} m`],
       ['바닥 면적', `${format(building.footprintArea)} m²`],
       ['바닥 · 지붕 표고', `${format(building.floorLevel)} · ${format(building.roofLevel)} m`],

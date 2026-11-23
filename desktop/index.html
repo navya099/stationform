@@ -34,12 +34,18 @@
         <input id="plaza-level" type="number" step="any" required>
         <fieldset class="building-controls">
           <legend>역사 본체</legend>
-          <label class="building-toggle"><input id="building-enabled" type="checkbox" disabled>선상역사 매스</label>
-          <fieldset id="building-fields" hidden disabled aria-label="선상역사 치수">
+          <label class="building-toggle"><input id="building-enabled" type="checkbox" disabled>역사 매스</label>
+          <fieldset id="building-fields" hidden disabled aria-label="역사 형식과 치수">
+            <label for="building-type">역사 형식</label>
+            <select id="building-type">
+              <option value="over-track" data-key="floorAboveRail" data-label="레일면 대비 바닥 높이 (m)" data-default="8">선상역사</option>
+              <option value="under-track" data-key="roofBelowRail" data-label="레일면에서 지붕까지 깊이 (m)" data-default="1">선하역사</option>
+              <option value="elevated" data-key="floorAboveGround" data-label="현황 지표면 대비 바닥 높이 (m)" data-default="0">고가역사 하부</option>
+            </select>
             <label for="building-length">길이 (m)</label><input id="building-length" type="number" step="any" value="24" required>
             <label for="building-width">폭 (m)</label><input id="building-width" type="number" step="any" value="20" required>
             <label for="building-height">높이 (m)</label><input id="building-height" type="number" step="any" value="6" required>
-            <label for="building-clearance">레일면 대비 바닥 높이 (m)</label><input id="building-clearance" type="number" step="any" value="8" required>
+            <label for="building-clearance" id="building-offset-label">레일면 대비 바닥 높이 (m)</label><input id="building-clearance" type="number" step="any" value="8" required>
           </fieldset>
         </fieldset>
         <button class="primary" type="submit" id="calculate" disabled>계산 적용</button>

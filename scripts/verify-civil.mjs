@@ -30,6 +30,31 @@ assert.deepEqual(study.stationBuilding.section, [
   { o: -10, z: 21 }, { o: 10, z: 21 }, { o: 10, z: 27 }, { o: -10, z: 27 },
 ]);
 assert.equal(study.stationBuilding.footprintArea, 480);
+assert.equal(study.stationBuilding.type, 'over-track');
+
+const dimensions = { length: 24, width: 20, height: 6 };
+const underTrack = studySite(civil, xml, {
+  ...options,
+  stationBuilding: { ...dimensions, type: 'under-track', roofBelowRail: 1 },
+});
+assert.equal(underTrack.stationBuilding.label, '선하역사');
+assert.equal(underTrack.stationBuilding.floorLevel, 6);
+assert.equal(underTrack.stationBuilding.roofLevel, 12);
+assert.deepEqual(underTrack.stationBuilding.footprint, study.stationBuilding.footprint);
+
+const elevatedOptions = {
+  ...options,
+  stationBuilding: { ...dimensions, type: 'elevated', floorAboveGround: 0.5 },
+};
+const highTrackXml = xml.replace('1000 12</PVI>', '1000 22</PVI>').replace('1100 14</PVI>', '1100 24</PVI>');
+const elevated = studySite(civil, highTrackXml, elevatedOptions);
+assert.equal(elevated.stationBuilding.label, '고가역사 하부');
+assert.equal(elevated.stationBuilding.floorLevel, 10.5);
+assert.equal(elevated.stationBuilding.roofLevel, 16.5);
+assert.throws(() => studySite(civil, xml, elevatedOptions), /지붕 표고는 기준 레일면보다 낮아야/);
+assert.throws(() => studySite(civil, xml, {
+  ...options, stationBuilding: { ...dimensions, type: 'unknown' },
+}), /지원하지 않는 역사 형식/);
 assert.equal(studySite(civil, xml, { ...options, stationBuilding: undefined }).stationBuilding, undefined);
 assert.throws(() => studySite(civil, xml, {
   ...options,

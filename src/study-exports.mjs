@@ -74,8 +74,9 @@ export function writeStudyDxf(writeDxf, study, revision, view, selected) {
   const entities = isPlan ? planEntities(study, alternative) : sectionEntities(study, alternative);
   const anchor = isPlan ? study.section.line[0] : { x: 0, y: study.station.railLevel };
   const title = isPlan ? '배치 평면' : 'A–A 횡단면';
+  const buildingType = study.stationBuilding ? ` / ${study.stationBuilding.label}` : '';
   entities.push(label(anchor.x, anchor.y + 3,
-    `${title} / ${study.station.value} m / 대안 ${alternative.name} / ID ${revision}`));
+    `${title}${buildingType} / ${study.station.value} m / 대안 ${alternative.name} / ID ${revision}`));
   const names = [...new Set(entities.map(({ layer }) => layer))];
   return writeDxf({ units: 'm', entities, layers: names.map((name) => ({ name, color: layers[name] })) }).text;
 }

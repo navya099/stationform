@@ -7,7 +7,7 @@ const ui = Object.fromEntries([
   'section-name', 'plan', 'section', 'volumes', 'rail-level', 'platform-level',
   'report-intent', 'report-rationale',
   'building-enabled', 'building-fields', 'building-length', 'building-width', 'building-height',
-  'building-clearance', 'building-summary', 'building-levels', 'building-area',
+  'building-type', 'building-clearance', 'building-offset-label', 'building-summary', 'building-levels', 'building-area',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
@@ -16,7 +16,6 @@ const buildingFields = {
   length: ui['building-length'],
   width: ui['building-width'],
   height: ui['building-height'],
-  floorAboveRail: ui['building-clearance'],
 };
 const format = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let study;
@@ -36,13 +35,26 @@ function studyInput() {
 
 function readBuilding() {
   if (!ui['building-enabled'].checked) return null;
-  return Object.fromEntries(Object.entries(buildingFields).map(([key, field]) => [key, field.valueAsNumber]));
+  const option = ui['building-type'].selectedOptions[0];
+  return {
+    type: option.value,
+    ...Object.fromEntries(Object.entries(buildingFields).map(([key, field]) => [key, field.valueAsNumber])),
+    [option.dataset.key]: ui['building-clearance'].valueAsNumber,
+  };
 }
 
 function showBuilding(building) {
   ui['building-enabled'].checked = Boolean(building);
   ui['building-fields'].hidden = !building;
   for (const [key, field] of Object.entries(buildingFields)) field.value = building?.[key] ?? field.defaultValue;
+  ui['building-type'].value = building?.type ?? 'over-track';
+  showBuildingOffset(building);
+}
+
+function showBuildingOffset(building) {
+  const { dataset } = ui['building-type'].selectedOptions[0];
+  ui['building-offset-label'].textContent = dataset.label;
+  ui['building-clearance'].value = building?.[dataset.key] ?? dataset.default;
 }
 
 function readReportNotes() {
@@ -189,7 +201,13 @@ ui['building-enabled'].addEventListener('change', () => {
   ui['building-fields'].hidden = ui['building-fields'].disabled = !ui['building-enabled'].checked;
   studyChanged();
 });
-for (const field of Object.values(buildingFields)) field.addEventListener('input', studyChanged);
+ui['building-type'].addEventListener('change', () => {
+  showBuildingOffset();
+  studyChanged();
+});
+for (const field of [...Object.values(buildingFields), ui['building-clearance']]) {
+  field.addEventListener('input', studyChanged);
+}
 ui['study-form'].addEventListener('submit', (event) => {
   event.preventDefault();
   if (files.source && files.settings) void task(run);
