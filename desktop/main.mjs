@@ -160,7 +160,9 @@ function openWindow(engine) {
     const options = updatedOptions(station, levels, building, road);
     const calculation = calculateSiteStudy(engine, source.content, options);
     const input = JSON.stringify(options);
-    const revision = createHash('sha256').update(source.content).update('\0').update(input).digest('hex').slice(0, 16);
+    const hash = createHash('sha256').update(source.content).update('\0').update(input);
+    if (options.accessRoad) hash.update('\0access-road-grading-v1');
+    const revision = hash.digest('hex').slice(0, 16);
     lastStudy = { calculation, input, revision };
     return calculation.study;
   });

@@ -40,7 +40,27 @@ assert.deepEqual(study.accessRoad.footprint, [
 ]);
 assert.deepEqual(study.alternatives.map(({ accessRoad }) => Math.round(accessRoad.gradePercent * 100)), [667, 1333]);
 assert.deepEqual(study.alternatives.map(({ accessRoad }) => accessRoad.exceedsLimit), [false, true]);
-assert.equal(studySite(civil, xml, { ...options, accessRoad: undefined }).accessRoad, undefined);
+const plazaOnly = studySite(civil, xml, { ...options, accessRoad: undefined });
+assert.equal(plazaOnly.accessRoad, undefined);
+for (const [index, surface] of calculation.proposedSurfaces.entries()) {
+  const alternative = study.alternatives[index];
+  const match = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-6);
+  match(surface.elevationAt(50, 5), 10);
+  match(surface.elevationAt(50, 12.5), (10 + alternative.plazaLevel) / 2);
+  match(surface.elevationAt(50, 20), alternative.plazaLevel);
+  match(surface.elevationAt(50, 28), alternative.plazaLevel);
+  assert.ok(alternative.earthwork.fill > plazaOnly.alternatives[index].earthwork.fill);
+}
+const reverse = calculateSiteStudy(civil, xml, {
+  ...options, plaza: { ...options.plaza, boundary: options.plaza.boundary.slice().reverse() },
+  accessRoad: { ...options.accessRoad, x: 45, plazaEdge: 3 },
+});
+assert.ok(Math.abs(reverse.proposedSurfaces[1].elevationAt(47.5, 12.5) - 11) < 1e-6);
+const cut = calculateSiteStudy(civil, xml, {
+  ...options, alternatives: [{ name: '절토', plazaLevel: 9 }],
+});
+assert.ok(Math.abs(cut.proposedSurfaces[0].elevationAt(50, 12.5) - 9.5) < 1e-6);
+assert.ok(cut.study.alternatives[0].earthwork.cut > 0);
 assert.throws(() => studySite(civil, xml, {
   ...options,
   accessRoad: { ...options.accessRoad, plazaEdge: 3 },
@@ -111,6 +131,7 @@ assert.match(ifc, /FILE_SCHEMA\(\('IFC4X3_ADD2'\)\)/);
 assert.match(ifc, /IFCBUILDINGELEMENTPROXY\(/);
 assert.match(ifc, /IFCSLAB\(/);
 assert.match(ifc, /IFCPAVEMENT\(/);
+assert.match(ifc, /'EarthworkScope',\$,IFCLABEL\('Plaza and access road'\)/);
 assert.match(ifc, /'AccessRoadGradeExceedsLimit',\$,IFCBOOLEAN\(\.T\.\)/);
 assert.match(ifc, /IFCTRIANGULATEDIRREGULARNETWORK\(/);
 assert.match(ifc, /'CalculationId',\$,IFCLABEL\('1234567890abcdef'\)/);
@@ -125,6 +146,8 @@ assert.match(sectionDxf, /STATION_BUILDING/);
 assert.equal(csv.codePointAt(0), 0xfeff);
 assert.equal(csv.trim().split('\r\n').length, 3);
 assert.equal(csv.match(/1234567890abcdef/g).length, 2);
+assert.match(csv, /"토공량 범위"/);
+assert.equal(csv.match(/"광장·진입로"/g).length, 2);
 assert.throws(() => writeStudyDxf(civil.writeDxf, study, revision, 'section', 2), /대안을 선택하세요/);
 
 const leftPlatform = studySite(civil, xml, { ...options, platform: { ...options.platform, edgeOffset: -2 } });

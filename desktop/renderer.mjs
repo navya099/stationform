@@ -9,7 +9,7 @@ const ui = Object.fromEntries([
   'building-enabled', 'building-fields', 'building-length', 'building-width', 'building-height',
   'building-type', 'building-clearance', 'building-offset-label', 'building-summary', 'building-levels', 'building-area',
   'road-enabled', 'road-fields', 'road-x', 'road-y', 'road-width', 'road-edge', 'road-limit',
-  'road-results', 'road-overview', 'road-grades',
+  'road-results', 'road-overview', 'road-grades', 'volume-scope',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
@@ -112,6 +112,8 @@ function present() {
   ui['road-grades'].replaceChildren();
   const road = study?.accessRoad;
   ui['road-results'].hidden = roadLegend.hidden = !road;
+  ui['volume-scope'].hidden = !study;
+  ui['volume-scope'].textContent = road ? '광장·진입로 통합 정지' : '광장 부지정지';
   ui['track-name'].textContent = study?.track.name ?? '';
   ui['section-name'].textContent = alternative ? `A–A · ${study.station.value} m · 대안 ${alternative.name}` : '';
   ui['rail-level'].textContent = study ? `${format.format(study.station.railLevel)} m` : '—';

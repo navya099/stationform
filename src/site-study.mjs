@@ -1,5 +1,5 @@
 import { buildStationMass } from './station-mass.mjs';
-import { buildAccessRoad, gradeAccessRoad } from './access-road.mjs';
+import { buildAccessRoad, gradeAccessRoad, joinAccessRoad } from './access-road.mjs';
 
 function select(items, index, label) {
   if (!Number.isInteger(index) || index < 0 || index >= items.length) {
@@ -115,12 +115,20 @@ export function calculateSiteStudy(civil, xml, options) {
     },
     section: { line, ground: groundSection },
     alternatives: alternatives.map(({ name, plazaLevel }) => {
-      const pad = { name, pts: plaza.boundary, z: plazaLevel, cut: plaza.cutSlope, fill: plaza.fillSlope };
+      const roadGrading = accessRoad && joinAccessRoad(accessRoad, plaza.boundary, plazaLevel);
+      const pad = {
+        name, pts: roadGrading?.boundary ?? plaza.boundary, z: plazaLevel,
+        cut: plaza.cutSlope, fill: plaza.fillSlope,
+      };
+      const build = roadGrading
+        ? (inputs) => civil.buildSurface({ ...inputs, breaklines: [...inputs.breaklines, ...roadGrading.breaklines] })
+        : civil.buildSurface;
       const { surface, regions, report, items } = civil.gradedSurface(
-        ground, terrain.pts, terrain.breaklines, [pad], civil.buildSurface,
+        ground, terrain.pts, terrain.breaklines, [pad], build,
       );
       if (!surface || report.errors.length || items[0].rays.some(({ kind }) => kind === 'off')) {
-        throw new Error(`${name} 대안의 광장 사면을 현황 지표면에 연결하지 못했습니다. ${JSON.stringify(report)}`);
+        const scope = accessRoad ? '광장·진입로' : '광장';
+        throw new Error(`${name} 대안의 ${scope} 사면을 현황 지표면에 연결하지 못했습니다. ${JSON.stringify(report)}`);
       }
       const earthwork = civil.gridVolume(ground, surface, { cell: volumeCell, region: regions[0] });
       if (!earthwork.cells) throw new Error(`${name} 대안에서 토공량을 산정할 격자가 없습니다.`);

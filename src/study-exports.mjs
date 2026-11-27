@@ -23,12 +23,13 @@ function cell(value) {
 export function writeEarthworkCsv(study, revision) {
   const headers = ['계산 ID', '선로', '종단', '측점 (m)', '대안', '광장 계획고 (m)', '절토 (m³)',
     '성토 (m³)', '순성토 (m³)', '격자 크기 (m)', '계산 면적 (m²)',
-    '진입로 길이 (m)', '진입로 종단경사 (%)', '검토 경사 (%)', '경사 초과'];
+    '진입로 길이 (m)', '진입로 종단경사 (%)', '검토 경사 (%)', '경사 초과', '토공량 범위'];
   const rows = study.alternatives.map(({ name, plazaLevel, earthwork, accessRoad }) => [
     revision, study.track.name, study.track.profile, study.station.value, name, plazaLevel,
     earthwork.cut, earthwork.fill, earthwork.net, earthwork.cell, earthwork.area,
     study.accessRoad?.length ?? '', accessRoad?.gradePercent ?? '', study.accessRoad?.maxGradePercent ?? '',
     accessRoad ? (accessRoad.exceedsLimit ? '예' : '아니오') : '',
+    study.accessRoad ? '광장·진입로' : '광장',
   ]);
   return '\uFEFF' + [headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }

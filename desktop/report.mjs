@@ -45,6 +45,8 @@ async function render() {
     }
   }
   const road = study.accessRoad;
+  const gradingScope = road ? '광장과 진입로의 통합 정지' : '광장 정지';
+  element('volume-scope').textContent = `토공량은 ${gradingScope} 사면이 현황 지형에 접합하는 경계 안에서 산정한 격자 기반 개략값입니다.`;
   if (road) {
     element('access-review').hidden = document.querySelector('[data-road-legend]').hidden = false;
     element('access-overview').textContent = `길이 ${format(road.length)} m · 폭 ${format(road.width)} m · 검토 경사 ${format(road.maxGradePercent)} %`;

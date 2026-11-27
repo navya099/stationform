@@ -1,3 +1,5 @@
+import { accessRoadSurface } from './access-road.mjs';
+
 function platformMesh(deck, side) {
   const positions = [];
   const indices = [];
@@ -17,15 +19,16 @@ export function writeStudyIfc(writeCivilIfc, calculation, selected, { name, revi
   if (!alternative) throw new Error('내보낼 대안을 선택하세요.');
   const building = study.stationBuilding;
   const road = study.accessRoad;
-  const roadElement = road ? [{
+  const accessSurface = road && accessRoadSurface(road, alternative.plazaLevel);
+  const roadElement = accessSurface ? [{
     tag: 'access-road',
     cls: 'IfcPavement',
     name: '진입로 개념 표면',
     objectType: 'Concept access road',
     body: {
       kind: 'mesh',
-      positions: road.footprint.flatMap(({ x, y }, index) => [x, y, index < 2 ? road.connectionLevel : alternative.plazaLevel]),
-      indices: [0, 1, 2, 0, 2, 3],
+      positions: accessSurface.points.flatMap(({ x, y, z }) => [x, y, z]),
+      indices: accessSurface.indices,
     },
   }] : [];
   const model = {
@@ -68,6 +71,7 @@ export function writeStudyIfc(writeCivilIfc, calculation, selected, { name, revi
       ['PlazaLevel', alternative.plazaLevel, 'len'],
       ['CutVolume', alternative.earthwork.cut, 'vol'],
       ['FillVolume', alternative.earthwork.fill, 'vol'],
+      ['EarthworkScope', road ? 'Plaza and access road' : 'Plaza', 'label'],
       ['AccessRoadLength', road?.length, 'len'],
       ['AccessRoadGradePercent', alternative.accessRoad?.gradePercent, 'real'],
       ['AccessRoadGradeLimitPercent', road?.maxGradePercent, 'real'],

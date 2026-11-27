@@ -6,11 +6,16 @@ export function accessRoadInput({ x, y, width, plazaEdge, maxGradePercent } = {}
   return { x, y, width, plazaEdge, maxGradePercent };
 }
 
+function openRing(boundary) {
+  const ring = boundary.slice();
+  if (ring.length > 1 && ring[0].x === ring.at(-1).x && ring[0].y === ring.at(-1).y) ring.pop();
+  return ring;
+}
+
 export function buildAccessRoad(civil, input, boundary, ground) {
   if (input == null) return undefined;
   const road = accessRoadInput(input);
-  const ring = boundary.slice();
-  if (ring.length > 1 && ring[0].x === ring.at(-1).x && ring[0].y === ring.at(-1).y) ring.pop();
+  const ring = openRing(boundary);
   if (road.plazaEdge > ring.length) throw new RangeError('진입로 광장 경계 번호가 범위를 벗어났습니다.');
   const a = ring[road.plazaEdge - 1];
   const b = ring[road.plazaEdge % ring.length];
@@ -58,4 +63,40 @@ export function gradeAccessRoad(road, plazaLevel) {
     gradePercent,
     exceedsLimit: Math.abs(gradePercent) > road.maxGradePercent + 1e-9,
   };
+}
+
+export function accessRoadSurface(road, plazaLevel) {
+  const points = [...road.footprint, ...road.centerline].map((point, index) => ({
+    ...point, z: index < 2 || index === 4 ? road.connectionLevel : plazaLevel,
+  }));
+  return { points, indices: [0, 4, 5, 0, 5, 3, 4, 1, 2, 4, 2, 5] };
+}
+
+export function joinAccessRoad(road, plazaBoundary, plazaLevel) {
+  const ring = openRing(plazaBoundary);
+  const { points } = accessRoadSurface(road, plazaLevel);
+  const [startLeft, startRight, gateRight, gateLeft, startCenter, gateCenter] = points;
+  const a = ring[road.plazaEdge - 1];
+  const b = ring[road.plazaEdge % ring.length];
+  const alongEdge = (gateRight.x - gateLeft.x) * (b.x - a.x) + (gateRight.y - gateLeft.y) * (b.y - a.y);
+  const path = [gateLeft, startLeft, startRight, gateRight];
+  if (alongEdge < 0) path.reverse();
+
+  const vertices = [
+    ...ring.slice(0, road.plazaEdge).map((point) => ({ ...point, z: plazaLevel })),
+    ...path,
+    ...ring.slice(road.plazaEdge).map((point) => ({ ...point, z: plazaLevel })),
+  ];
+  const boundary = vertices.filter((point, index) => {
+    const previous = vertices.at(index - 1);
+    return Math.hypot(point.x - previous.x, point.y - previous.y) > 1e-6;
+  });
+  const breaklines = [
+    { name: '광장 접속부', pts: [gateLeft, gateCenter, gateRight] },
+    { name: '기존 도로 접속부', pts: [startLeft, startCenter, startRight] },
+    { name: '진입로 중심선', pts: [startCenter, gateCenter] },
+    { name: '진입로 삼각망 좌측', pts: [startLeft, gateCenter] },
+    { name: '진입로 삼각망 우측', pts: [startCenter, gateRight] },
+  ];
+  return { boundary, breaklines };
 }

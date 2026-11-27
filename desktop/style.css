@@ -44,7 +44,7 @@ form label:not(:first-child) { margin-top: .4rem; }
 .building-toggle input { width: auto; }
 #building-fields label, #road-fields label { display: block; }
 .road-controls summary { cursor: pointer; font-weight: 650; }
-#road-overview { color: var(--muted); margin-bottom: 0; }
+#road-overview, .result-context { color: var(--muted); margin-bottom: 0; }
 #road-grades [data-exceeds] { color: #ffb7a7; }
 input, select { width: 100%; min-width: 0; }
 #status { font-size: .88rem; overflow-wrap: anywhere; }
