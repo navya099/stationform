@@ -33,6 +33,22 @@ assert.deepEqual(study.stationBuilding.section, [
 ]);
 assert.equal(study.stationBuilding.footprintArea, 480);
 assert.equal(study.stationBuilding.type, 'over-track');
+assert.equal(study.accessRoad.length, 15);
+assert.equal(study.accessRoad.connectionLevel, 10);
+assert.deepEqual(study.accessRoad.footprint, [
+  { x: 47, y: 5 }, { x: 53, y: 5 }, { x: 53, y: 20 }, { x: 47, y: 20 },
+]);
+assert.deepEqual(study.alternatives.map(({ accessRoad }) => Math.round(accessRoad.gradePercent * 100)), [667, 1333]);
+assert.deepEqual(study.alternatives.map(({ accessRoad }) => accessRoad.exceedsLimit), [false, true]);
+assert.equal(studySite(civil, xml, { ...options, accessRoad: undefined }).accessRoad, undefined);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  accessRoad: { ...options.accessRoad, plazaEdge: 3 },
+}), /지정한 광장 경계부터/);
+assert.throws(() => studySite(civil, xml, {
+  ...options,
+  accessRoad: { ...options.accessRoad, x: 50, y: -5 },
+}), /현황 지표면 표고/);
 
 const dimensions = { length: 24, width: 20, height: 6 };
 const underTrack = studySite(civil, xml, {
@@ -94,6 +110,8 @@ const ifc = writeStudyIfc(civil.writeCivilIfc, calculation, 1, { name: 'StationF
 assert.match(ifc, /FILE_SCHEMA\(\('IFC4X3_ADD2'\)\)/);
 assert.match(ifc, /IFCBUILDINGELEMENTPROXY\(/);
 assert.match(ifc, /IFCSLAB\(/);
+assert.match(ifc, /IFCPAVEMENT\(/);
+assert.match(ifc, /'AccessRoadGradeExceedsLimit',\$,IFCBOOLEAN\(\.T\.\)/);
 assert.match(ifc, /IFCTRIANGULATEDIRREGULARNETWORK\(/);
 assert.match(ifc, /'CalculationId',\$,IFCLABEL\('1234567890abcdef'\)/);
 assert.match(ifc, /'Alternative',\$,IFCLABEL\('B'\)/);
@@ -102,6 +120,7 @@ assert.throws(() => writeStudyIfc(civil.writeCivilIfc, calculation, 2, { name: '
 assert.match(planDxf, /AC1009[\s\S]*GRADING_LIMIT[\s\S]*1234567890abcdef/);
 assert.match(sectionDxf, /AC1009[\s\S]*PROPOSED_GROUND[\s\S]*1234567890abcdef/);
 assert.match(planDxf, /STATION_BUILDING/);
+assert.match(planDxf, /ACCESS_ROAD/);
 assert.match(sectionDxf, /STATION_BUILDING/);
 assert.equal(csv.codePointAt(0), 0xfeff);
 assert.equal(csv.trim().split('\r\n').length, 3);

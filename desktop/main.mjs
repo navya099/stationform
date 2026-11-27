@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { accessRoadInput } from '../src/access-road.mjs';
 import { loadCivilCraft } from '../src/civilcraft.mjs';
 import { writeLocalFile } from '../src/local-files.mjs';
 import { readProjectFile, reportNotes, writeProjectFile } from '../src/project-file.mjs';
@@ -93,10 +94,11 @@ function openWindow(engine) {
       settings: name,
       station: options.station,
       stationBuilding: options.stationBuilding == null ? undefined : stationBuildingInput(options.stationBuilding),
+      accessRoad: options.accessRoad == null ? undefined : accessRoadInput(options.accessRoad),
       alternatives: options.alternatives.map(({ name, plazaLevel }) => ({ name, plazaLevel })),
     };
   };
-  const updatedOptions = (station, levels, building) => {
+  const updatedOptions = (station, levels, building, road) => {
     if (!source || !settings) throw new Error('LandXML과 설계 조건을 먼저 여세요.');
     const { options } = settings;
     if (!Number.isFinite(station) || !Array.isArray(levels) || levels.length !== options.alternatives.length
@@ -110,6 +112,8 @@ function openWindow(engine) {
     };
     if (building === null) delete updated.stationBuilding;
     else if (building !== undefined) updated.stationBuilding = stationBuildingInput(building);
+    if (road === null) delete updated.accessRoad;
+    else if (road !== undefined) updated.accessRoad = accessRoadInput(road);
     return updated;
   };
   const confirmDiscard = () => dialog.showMessageBoxSync(window, {
@@ -151,19 +155,19 @@ function openWindow(engine) {
     lastStudy = undefined;
     return result;
   });
-  handle('study:run', (station, levels, building) => {
+  handle('study:run', (station, levels, building, road) => {
     lastStudy = undefined;
-    const options = updatedOptions(station, levels, building);
+    const options = updatedOptions(station, levels, building, road);
     const calculation = calculateSiteStudy(engine, source.content, options);
     const input = JSON.stringify(options);
     const revision = createHash('sha256').update(source.content).update('\0').update(input).digest('hex').slice(0, 16);
     lastStudy = { calculation, input, revision };
     return calculation.study;
   });
-  handle('study:export', async (kind, station, levels, selected, report, building) => {
+  handle('study:export', async (kind, station, levels, selected, report, building, road) => {
     const format = exportFormats.get(kind);
     if (!format) throw new Error('지원하지 않는 내보내기 형식입니다.');
-    const input = JSON.stringify(updatedOptions(station, levels, building));
+    const input = JSON.stringify(updatedOptions(station, levels, building, road));
     if (!lastStudy || lastStudy.input !== input) throw new Error('계산을 적용한 뒤 내보내세요.');
     const { calculation, revision } = lastStudy;
     const result = calculation.study;
@@ -205,8 +209,8 @@ function openWindow(engine) {
     lastStudy = undefined;
     return result;
   });
-  handle('project:save', async (station, levels, selected, report, building) => {
-    const options = updatedOptions(station, levels, building);
+  handle('project:save', async (station, levels, selected, report, building, road) => {
+    const options = updatedOptions(station, levels, building, road);
     let path = projectPath;
     if (!path) {
       const base = basename(source.name).replace(/\.(?:landxml|xml)$/i, '');

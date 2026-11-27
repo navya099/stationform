@@ -44,6 +44,18 @@ async function render() {
       row.insertCell().textContent = format(value);
     }
   }
+  const road = study.accessRoad;
+  if (road) {
+    element('access-review').hidden = document.querySelector('[data-road-legend]').hidden = false;
+    element('access-overview').textContent = `길이 ${format(road.length)} m · 폭 ${format(road.width)} m · 검토 경사 ${format(road.maxGradePercent)} %`;
+    for (const [index, { name, accessRoad }] of study.alternatives.entries()) {
+      const row = element('access-grades').insertRow();
+      if (index === selected) row.classList.add('selected');
+      row.insertCell().textContent = name;
+      row.insertCell().textContent = format(accessRoad.gradePercent);
+      row.insertCell().textContent = accessRoad.exceedsLimit ? '초과' : '범위 내';
+    }
+  }
   drawPlan(element('plan'), study, alternative);
   drawSection(element('section'), study, alternative);
   await document.fonts.ready;

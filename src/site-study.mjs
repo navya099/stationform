@@ -1,4 +1,5 @@
 import { buildStationMass } from './station-mass.mjs';
+import { buildAccessRoad, gradeAccessRoad } from './access-road.mjs';
 
 function select(items, index, label) {
   if (!Number.isInteger(index) || index < 0 || index >= items.length) {
@@ -70,6 +71,7 @@ export function calculateSiteStudy(civil, xml, options) {
   const stationBuilding = buildStationMass(
     options.stationBuilding, reference, railLevel, station, range, section, ground.elevationAt(x, y),
   );
+  const accessRoad = buildAccessRoad(civil, options.accessRoad, plaza.boundary, ground);
   const line = [offsetPoint(reference, -section.left), { x, y }, offsetPoint(reference, section.right)];
   const cutSection = (surface) => civil.cutSection(surface, line, { origin: section.left }).runs;
   const groundSection = cutSection(ground);
@@ -94,6 +96,7 @@ export function calculateSiteStudy(civil, xml, options) {
     track: { name: track.name, profile: profileInput.name },
     station: { value: station, x, y, railLevel },
     ...(stationBuilding && { stationBuilding }),
+    ...(accessRoad && { accessRoad }),
     plan: {
       track: planPoints.map(({ point }) => xy(point)),
       platform: [
@@ -122,7 +125,10 @@ export function calculateSiteStudy(civil, xml, options) {
       const earthwork = civil.gridVolume(ground, surface, { cell: volumeCell, region: regions[0] });
       if (!earthwork.cells) throw new Error(`${name} 대안에서 토공량을 산정할 격자가 없습니다.`);
       proposedSurfaces.push(surface);
-      return { name, plazaLevel, earthwork, gradingBoundary: regions[0], plannedSection: cutSection(surface) };
+      return {
+        name, plazaLevel, earthwork, gradingBoundary: regions[0], plannedSection: cutSection(surface),
+        ...(accessRoad && { accessRoad: gradeAccessRoad(accessRoad, plazaLevel) }),
+      };
     }),
   };
   return { study, proposedSurfaces, platformDeck: planPoints, sourceCrs: project.coordinateSystem };

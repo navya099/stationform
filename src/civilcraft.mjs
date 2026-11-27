@@ -6,9 +6,9 @@ export const civilCraftModules = {
   'landxml.js': ['readLandXml'],
   'alignment.js': ['buildAlignment'],
   'profile.js': ['buildProfile'],
-  'tin.js': ['buildSurface', 'surfaceFromFaces'],
+  'tin.js': ['buildSurface', 'surfaceFromFaces', 'pointInPoly'],
   'grading.js': ['gradedSurface', 'gridVolume'],
-  'terrain-section.js': ['cutSection'],
+  'terrain-section.js': ['cutSection', 'crossing'],
   'dxf.js': ['writeDxf'],
   'ifc-civil.js': ['writeCivilIfc'],
 };

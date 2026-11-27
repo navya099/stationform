@@ -8,10 +8,17 @@ const ui = Object.fromEntries([
   'report-intent', 'report-rationale',
   'building-enabled', 'building-fields', 'building-length', 'building-width', 'building-height',
   'building-type', 'building-clearance', 'building-offset-label', 'building-summary', 'building-levels', 'building-area',
+  'road-enabled', 'road-fields', 'road-x', 'road-y', 'road-width', 'road-edge', 'road-limit',
+  'road-results', 'road-overview', 'road-grades',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
 const buildingLegends = document.querySelectorAll('[data-building-legend]');
+const roadLegend = document.querySelector('[data-road-legend]');
+const roadFields = {
+  x: ui['road-x'], y: ui['road-y'], width: ui['road-width'],
+  plazaEdge: ui['road-edge'], maxGradePercent: ui['road-limit'],
+};
 const buildingFields = {
   length: ui['building-length'],
   width: ui['building-width'],
@@ -31,6 +38,17 @@ function updateProjectStatus() {
 
 function studyInput() {
   return [ui.station.valueAsNumber, alternatives.map(({ plazaLevel }) => plazaLevel)];
+}
+
+function readRoad() {
+  if (!ui['road-enabled'].checked) return null;
+  return Object.fromEntries(Object.entries(roadFields).map(([key, field]) => [key, field.valueAsNumber]));
+}
+
+function updateRoadFields() {
+  ui['road-enabled'].disabled = !files.settings;
+  ui['road-fields'].hidden = !ui['road-enabled'].checked;
+  ui['road-fields'].disabled = !files.settings || !ui['road-enabled'].checked;
 }
 
 function readBuilding() {
@@ -71,8 +89,12 @@ function updateExportButtons() {
   const sameBuilding = building
     ? Object.entries(building).every(([key, value]) => value === study?.stationBuilding?.[key])
     : !study?.stationBuilding;
+  const road = readRoad();
+  const sameRoad = road
+    ? Object.entries(road).every(([key, value]) => value === study?.accessRoad?.[key])
+    : !study?.accessRoad;
   const current = study && ui.station.valueAsNumber === study.station.value
-    && sameBuilding
+    && sameBuilding && sameRoad
     && alternatives.every(({ plazaLevel }, index) => plazaLevel === study.alternatives[index].plazaLevel);
   for (const button of exportButtons) button.disabled = !current;
 }
@@ -87,6 +109,9 @@ function present() {
   ui.plan.replaceChildren();
   ui.section.replaceChildren();
   ui.volumes.replaceChildren();
+  ui['road-grades'].replaceChildren();
+  const road = study?.accessRoad;
+  ui['road-results'].hidden = roadLegend.hidden = !road;
   ui['track-name'].textContent = study?.track.name ?? '';
   ui['section-name'].textContent = alternative ? `A–A · ${study.station.value} m · 대안 ${alternative.name}` : '';
   ui['rail-level'].textContent = study ? `${format.format(study.station.railLevel)} m` : '—';
@@ -109,6 +134,18 @@ function present() {
     row.insertCell().textContent = format.format(earthwork.cut);
     row.insertCell().textContent = format.format(earthwork.fill);
   });
+  if (road) {
+    ui['road-overview'].textContent = `길이 ${format.format(road.length)} m · 폭 ${format.format(road.width)} m · 기준 ${format.format(road.maxGradePercent)} %`;
+    study.alternatives.forEach(({ name, accessRoad }, index) => {
+      const row = ui['road-grades'].insertRow();
+      if (index === selected) row.setAttribute('aria-current', 'true');
+      row.insertCell().textContent = name;
+      row.insertCell().textContent = format.format(accessRoad.gradePercent);
+      const check = row.insertCell();
+      check.textContent = accessRoad.exceedsLimit ? '초과' : '범위 내';
+      check.toggleAttribute('data-exceeds', accessRoad.exceedsLimit);
+    });
+  }
 }
 
 function showSettings(result) {
@@ -121,6 +158,9 @@ function showSettings(result) {
   ui.alternative.value = selected;
   ui['plaza-level'].value = alternatives[selected].plazaLevel ?? '';
   showBuilding(result.stationBuilding);
+  ui['road-enabled'].checked = Boolean(result.accessRoad);
+  ui['road-fields'].hidden = !result.accessRoad;
+  for (const [key, field] of Object.entries(roadFields)) field.value = result.accessRoad?.[key] ?? field.defaultValue;
   settingsEdited = false;
 }
 
@@ -133,7 +173,7 @@ async function run() {
   study = undefined;
   present();
   message('계산 중');
-  study = await window.stationForm.run(...studyInput(), readBuilding());
+  study = await window.stationForm.run(...studyInput(), readBuilding(), readRoad());
   present();
   message('계산 완료');
 }
@@ -141,7 +181,7 @@ async function run() {
 async function task(action) {
   const controls = [ui['open-project'], ui['save-project'], ui['open-source'], ui['open-settings'], ui.sample, ui.station,
     ui.alternative, ui['plaza-level'], ui.calculate, ui['report-intent'], ui['report-rationale'],
-    ui['building-enabled'], ui['building-fields'], ...exportButtons];
+    ui['building-enabled'], ui['building-fields'], ui['road-enabled'], ui['road-fields'], ...exportButtons];
   for (const control of controls) control.disabled = true;
   try {
     await action();
@@ -153,6 +193,7 @@ async function task(action) {
     for (const control of [ui.station, ui.alternative, ui['plaza-level']]) control.disabled = !files.settings;
     ui['building-enabled'].disabled = !files.settings;
     ui['building-fields'].disabled = !files.settings || !ui['building-enabled'].checked;
+    updateRoadFields();
     ui.calculate.disabled = !files.source || !files.settings;
     ui['save-project'].disabled = ui.calculate.disabled;
     updateExportButtons();
@@ -208,6 +249,11 @@ ui['building-type'].addEventListener('change', () => {
 for (const field of [...Object.values(buildingFields), ui['building-clearance']]) {
   field.addEventListener('input', studyChanged);
 }
+ui['road-enabled'].addEventListener('change', () => {
+  updateRoadFields();
+  studyChanged();
+});
+for (const field of Object.values(roadFields)) field.addEventListener('input', studyChanged);
 ui['study-form'].addEventListener('submit', (event) => {
   event.preventDefault();
   if (files.source && files.settings) void task(run);
@@ -234,7 +280,7 @@ ui['open-project'].addEventListener('click', () => task(async () => {
   await run();
 }));
 ui['save-project'].addEventListener('click', () => task(async () => {
-  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes(), readBuilding());
+  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes(), readBuilding(), readRoad());
   if (!name) return;
   projectName = name;
   dirty = settingsEdited = false;
@@ -252,7 +298,7 @@ for (const field of [ui['report-intent'], ui['report-rationale']]) {
 for (const button of exportButtons) {
   button.addEventListener('click', () => task(async () => {
     const name = await window.stationForm.exportStudy(
-      button.dataset.export, ...studyInput(), selected, readReportNotes(), readBuilding(),
+      button.dataset.export, ...studyInput(), selected, readReportNotes(), readBuilding(), readRoad(),
     );
     if (name) message(`${name} 파일을 저장했습니다.`);
   }));

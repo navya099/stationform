@@ -2,6 +2,8 @@ const layers = {
   TRACK_CENTER: 7,
   PLATFORM: 4,
   PLAZA: 3,
+  ACCESS_ROAD: 30,
+  ROAD_CENTER: 32,
   STATION_BUILDING: 6,
   GRADING_LIMIT: 94,
   SECTION_CUT: 2,
@@ -20,10 +22,13 @@ function cell(value) {
 
 export function writeEarthworkCsv(study, revision) {
   const headers = ['계산 ID', '선로', '종단', '측점 (m)', '대안', '광장 계획고 (m)', '절토 (m³)',
-    '성토 (m³)', '순성토 (m³)', '격자 크기 (m)', '계산 면적 (m²)'];
-  const rows = study.alternatives.map(({ name, plazaLevel, earthwork }) => [
+    '성토 (m³)', '순성토 (m³)', '격자 크기 (m)', '계산 면적 (m²)',
+    '진입로 길이 (m)', '진입로 종단경사 (%)', '검토 경사 (%)', '경사 초과'];
+  const rows = study.alternatives.map(({ name, plazaLevel, earthwork, accessRoad }) => [
     revision, study.track.name, study.track.profile, study.station.value, name, plazaLevel,
     earthwork.cut, earthwork.fill, earthwork.net, earthwork.cell, earthwork.area,
+    study.accessRoad?.length ?? '', accessRoad?.gradePercent ?? '', study.accessRoad?.maxGradePercent ?? '',
+    accessRoad ? (accessRoad.exceedsLimit ? '예' : '아니오') : '',
   ]);
   return '\uFEFF' + [headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }
@@ -43,6 +48,10 @@ function planEntities(study, alternative) {
     polyline('TRACK_CENTER', track),
     polyline('PLATFORM', platform, true),
     polyline('PLAZA', plaza, true),
+    ...(study.accessRoad ? [
+      polyline('ACCESS_ROAD', study.accessRoad.footprint, true),
+      polyline('ROAD_CENTER', study.accessRoad.centerline),
+    ] : []),
     ...(study.stationBuilding ? [polyline('STATION_BUILDING', study.stationBuilding.footprint, true)] : []),
     polyline('GRADING_LIMIT', alternative.gradingBoundary, true),
     polyline('SECTION_CUT', line),

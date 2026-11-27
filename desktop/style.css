@@ -10,6 +10,7 @@
   --track: #a4bad3;
   --platform: #79b9ff;
   --plaza: #6ad6b4;
+  --road: #dbbd87;
   --building: #e4b0ef;
   --grading: #91c297;
   --cut: #f2ba77;
@@ -37,11 +38,14 @@ h1, h2 { font-size: 1rem; margin: 0; font-weight: 650; }
 dd { margin: .18rem 0 .75rem; overflow-wrap: anywhere; }
 form { display: grid; gap: .42rem; border-top: 1px solid var(--line); padding-top: .9rem; }
 form label:not(:first-child) { margin-top: .4rem; }
-.building-controls, #building-fields { border: 0; padding: 0; margin: .5rem 0 0; min-width: 0; }
+.building-controls, #building-fields, #road-fields { border: 0; padding: 0; margin: .5rem 0 0; min-width: 0; }
 .building-controls legend { padding: 0; font-weight: 650; }
 .building-toggle { display: flex; align-items: center; gap: .4rem; }
 .building-toggle input { width: auto; }
-#building-fields label { display: block; }
+#building-fields label, #road-fields label { display: block; }
+.road-controls summary { cursor: pointer; font-weight: 650; }
+#road-overview { color: var(--muted); margin-bottom: 0; }
+#road-grades [data-exceeds] { color: #ffb7a7; }
 input, select { width: 100%; min-width: 0; }
 #status { font-size: .88rem; overflow-wrap: anywhere; }
 #status[data-error] { color: #ffb7a7; }
@@ -62,6 +66,8 @@ svg .line { stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
 svg .track { stroke: var(--track); }
 svg .platform { stroke: var(--platform); fill: #244465; }
 svg .plaza { stroke: var(--plaza); fill: #214638; }
+svg .access-road { stroke: var(--road); fill: #473c29; }
+svg .road-centerline { stroke: var(--road); stroke-dasharray: 3 3; }
 svg .station-building { stroke: var(--building); fill: #5c3c68; fill-opacity: .48; }
 svg .grading { stroke: var(--grading); stroke-dasharray: 4 4; }
 svg .cut { stroke: var(--cut); stroke-dasharray: 7 5; }
@@ -75,6 +81,7 @@ svg .platform-line { stroke: var(--platform); }
 .track-key { --key: var(--track); }
 .platform-key { --key: var(--platform); }
 .plaza-key { --key: var(--plaza); }
+.road-key { --key: var(--road); }
 .building-key { --key: var(--building); }
 .grading-key { --key: var(--grading); }
 .cut-key { --key: var(--cut); }

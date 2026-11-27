@@ -48,6 +48,17 @@
             <label for="building-clearance" id="building-offset-label">레일면 대비 바닥 높이 (m)</label><input id="building-clearance" type="number" step="any" value="8" required>
           </fieldset>
         </fieldset>
+        <details class="road-controls">
+          <summary>진입로</summary>
+          <label class="building-toggle"><input id="road-enabled" type="checkbox" disabled>진입로 검토</label>
+          <fieldset id="road-fields" hidden disabled aria-label="진입로 설계 조건">
+            <label for="road-x">기존 도로 접속 X (m)</label><input id="road-x" type="number" step="any" required>
+            <label for="road-y">기존 도로 접속 Y (m)</label><input id="road-y" type="number" step="any" required>
+            <label for="road-width">진입로 폭 (m)</label><input id="road-width" type="number" step="any" value="6" required>
+            <label for="road-edge">광장 접속 경계 번호</label><input id="road-edge" type="number" min="1" step="1" value="1" required>
+            <label for="road-limit">검토 경사 (%)</label><input id="road-limit" type="number" step="any" required>
+          </fieldset>
+        </details>
         <button class="primary" type="submit" id="calculate" disabled>계산 적용</button>
       </form>
       <p id="status" role="status">샘플을 열거나 LandXML과 설계 조건을 선택하세요.</p>
@@ -56,7 +67,7 @@
       <section class="sheet">
         <div class="sheet-heading"><h2>배치 평면</h2><span id="track-name"></span><button type="button" data-export="plan" aria-label="배치 평면 DXF 저장" disabled>DXF 저장</button></div>
         <svg id="plan" viewBox="0 0 680 270" role="img" aria-label="선로, 승강장, 광장 및 횡단 절단선"></svg>
-        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="building-key" data-building-legend hidden>역사 본체</span><span class="plaza-key">역전광장</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></div>
+        <div class="legend"><span class="track-key">선로</span><span class="platform-key">승강장</span><span class="building-key" data-building-legend hidden>역사 본체</span><span class="plaza-key">역전광장</span><span class="road-key" data-road-legend hidden>진입로</span><span class="grading-key">사면 접합선</span><span class="cut-key">횡단 절단선</span></div>
       </section>
       <section class="sheet">
         <div class="sheet-heading"><h2>횡단면</h2><span id="section-name"></span><button type="button" data-export="section" aria-label="횡단면 DXF 저장" disabled>DXF 저장</button></div>
@@ -79,6 +90,14 @@
           <dt>역사 바닥 면적</dt><dd id="building-area"></dd>
         </div>
       </dl>
+      <section class="report-tools" id="road-results" hidden>
+        <h2>진입로 경사 비교</h2>
+        <p id="road-overview"></p>
+        <table>
+          <thead><tr><th scope="col">대안</th><th scope="col">경사 (%)</th><th scope="col">검토</th></tr></thead>
+          <tbody id="road-grades"></tbody>
+        </table>
+      </section>
       <section class="report-tools">
         <h2>건축설계설명서</h2>
         <details>
