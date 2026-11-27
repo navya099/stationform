@@ -2,6 +2,17 @@ import { registerHooks } from 'node:module';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+export const civilCraftModules = {
+  'landxml.js': ['readLandXml'],
+  'alignment.js': ['buildAlignment'],
+  'profile.js': ['buildProfile'],
+  'tin.js': ['buildSurface', 'surfaceFromFaces'],
+  'grading.js': ['gradedSurface', 'gridVolume'],
+  'terrain-section.js': ['cutSection'],
+  'dxf.js': ['writeDxf'],
+  'ifc-civil.js': ['writeCivilIfc'],
+};
+
 export async function loadCivilCraft(checkout) {
   const app = resolve(checkout, 'app');
   const appUrl = pathToFileURL(app + '/').href;
@@ -21,16 +32,12 @@ export async function loadCivilCraft(checkout) {
   });
 
   try {
-    const load = (file) => import(new URL(file, appUrl).href);
-    const { readLandXml } = await load('landxml.js');
-    const { buildAlignment } = await load('alignment.js');
-    const { buildProfile } = await load('profile.js');
-    const { buildSurface, surfaceFromFaces } = await load('tin.js');
-    const { gradedSurface, gridVolume } = await load('grading.js');
-    const { cutSection } = await load('terrain-section.js');
-    const { writeDxf } = await load('dxf.js');
-    const { writeCivilIfc } = await load('ifc-civil.js');
-    return { readLandXml, buildAlignment, buildProfile, buildSurface, surfaceFromFaces, gradedSurface, gridVolume, cutSection, writeDxf, writeCivilIfc };
+    const engine = {};
+    for (const [file, names] of Object.entries(civilCraftModules)) {
+      const module = await import(new URL(file, appUrl).href);
+      for (const name of names) engine[name] = module[name];
+    }
+    return engine;
   } finally {
     hook.deregister();
   }

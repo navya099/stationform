@@ -27,8 +27,12 @@ const exportFormats = new Map([
 app.commandLine.appendSwitch('disable-background-networking');
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
-  if (!checkout) throw new Error('npm run desktop -- <CivilCraft 체크아웃 경로>');
-  openWindow(await loadCivilCraft(checkout));
+  if (app.isPackaged) {
+    openWindow(await import('../vendor/civilcraft.mjs'));
+  } else {
+    if (!checkout) throw new Error('npm run desktop -- <CivilCraft 체크아웃 경로>');
+    openWindow(await loadCivilCraft(checkout));
+  }
 }).catch((error) => {
   dialog.showErrorBox('StationForm을 시작할 수 없습니다', error.message);
   app.exit(1);

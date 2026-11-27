@@ -9,11 +9,15 @@
     "test": "node --test",
     "study:civil": "node scripts/study-civil.mjs",
     "verify:civil": "node scripts/verify-civil.mjs",
-    "desktop": "electron desktop/main.mjs"
+    "desktop": "electron desktop/main.mjs",
+    "pack:desktop": "node scripts/package-desktop.mjs"
   },
   "devDependencies": {
+    "@electron/packager": "20.3.0",
     "delaunator": "5.1.0",
     "electron": "45.4.1",
+    "esbuild": "0.28.2",
     "robust-predicates": "3.0.3"
-  }
+  },
+  "version": "0.1.0"
 }
