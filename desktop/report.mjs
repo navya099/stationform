@@ -58,6 +58,20 @@ async function render() {
       row.insertCell().textContent = accessRoad.exceedsLimit ? '초과' : '범위 내';
     }
   }
+  const link = study.pedestrianLink;
+  if (link) {
+    element('link-review').hidden = document.querySelector('[data-link-legend]').hidden = false;
+    element('link-overview').textContent = `${link.label} · 길이 ${format(link.length)} m · 폭 ${format(link.width)} m`;
+    for (const [index, { name, pedestrianLink }] of study.alternatives.entries()) {
+      const row = element('link-levels').insertRow();
+      if (index === selected) row.classList.add('selected');
+      row.insertCell().textContent = name;
+      for (const value of [pedestrianLink.startLevel, pedestrianLink.endLevel, pedestrianLink.gradePercent,
+        pedestrianLink.plazaLevelDifference, pedestrianLink.stationLevelDifference]) {
+        row.insertCell().textContent = format(value);
+      }
+    }
+  }
   drawPlan(element('plan'), study, alternative);
   drawSection(element('section'), study, alternative);
   await document.fonts.ready;

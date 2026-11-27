@@ -9,6 +9,7 @@
   --building: #7b467d;
   --planned: #18755c;
   --road: #826126;
+  --pedestrian: #1c7688;
   --grading: #376f57;
   --cut: #a14e18;
 }
@@ -41,6 +42,8 @@ svg .platform-line { stroke: var(--platform); }
 svg .station-building { stroke: var(--building); fill: #f1e5f2; fill-opacity: .6; }
 svg .plaza { stroke: var(--planned); fill: #ddf0e7; }
 svg .access-road { stroke: var(--road); fill: #f6ead5; }
+svg .pedestrian-link { stroke: var(--pedestrian); fill: #d5eef2; }
+svg .pedestrian-underpass { stroke-dasharray: 4 4; }
 svg .road-centerline { stroke: var(--road); stroke-dasharray: 3 3; }
 svg .grading { stroke: var(--grading); stroke-dasharray: 4 4; }
 svg .cut { stroke: var(--cut); stroke-dasharray: 7 5; }
@@ -54,5 +57,6 @@ svg .mark { fill: var(--cut); }
 .building-key { --key: var(--building); }
 .proposed-key { --key: var(--planned); }
 .road-key { --key: var(--road); }
+.pedestrian-key { --key: var(--pedestrian); }
 .grading-key { --key: var(--grading); }
 .cut-key { --key: var(--cut); }

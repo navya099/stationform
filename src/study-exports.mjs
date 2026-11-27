@@ -4,6 +4,8 @@ const layers = {
   PLAZA: 3,
   ACCESS_ROAD: 30,
   ROAD_CENTER: 32,
+  PEDESTRIAN_LINK: 4,
+  PEDESTRIAN_UNDERPASS: 4,
   STATION_BUILDING: 6,
   GRADING_LIMIT: 94,
   SECTION_CUT: 2,
@@ -23,13 +25,18 @@ function cell(value) {
 export function writeEarthworkCsv(study, revision) {
   const headers = ['계산 ID', '선로', '종단', '측점 (m)', '대안', '광장 계획고 (m)', '절토 (m³)',
     '성토 (m³)', '순성토 (m³)', '격자 크기 (m)', '계산 면적 (m²)',
-    '진입로 길이 (m)', '진입로 종단경사 (%)', '검토 경사 (%)', '경사 초과', '토공량 범위'];
-  const rows = study.alternatives.map(({ name, plazaLevel, earthwork, accessRoad }) => [
+    '진입로 길이 (m)', '진입로 종단경사 (%)', '검토 경사 (%)', '경사 초과', '토공량 범위',
+    '보행 연결 형식', '보행 길이 (m)', '보행 시작 표고 (m)', '보행 끝 표고 (m)', '보행 종단경사 (%)',
+    '광장 접속 표고차 (m)', '역사 접속 표고차 (m)'];
+  const rows = study.alternatives.map(({ name, plazaLevel, earthwork, accessRoad, pedestrianLink }) => [
     revision, study.track.name, study.track.profile, study.station.value, name, plazaLevel,
     earthwork.cut, earthwork.fill, earthwork.net, earthwork.cell, earthwork.area,
     study.accessRoad?.length ?? '', accessRoad?.gradePercent ?? '', study.accessRoad?.maxGradePercent ?? '',
     accessRoad ? (accessRoad.exceedsLimit ? '예' : '아니오') : '',
     study.accessRoad ? '광장·진입로' : '광장',
+    study.pedestrianLink?.label ?? '', study.pedestrianLink?.length ?? '', pedestrianLink?.startLevel ?? '',
+    pedestrianLink?.endLevel ?? '', pedestrianLink?.gradePercent ?? '', pedestrianLink?.plazaLevelDifference ?? '',
+    pedestrianLink?.stationLevelDifference ?? '',
   ]);
   return '\uFEFF' + [headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }
@@ -54,6 +61,10 @@ function planEntities(study, alternative) {
       polyline('ROAD_CENTER', study.accessRoad.centerline),
     ] : []),
     ...(study.stationBuilding ? [polyline('STATION_BUILDING', study.stationBuilding.footprint, true)] : []),
+    ...(study.pedestrianLink ? [polyline(
+      study.pedestrianLink.type === 'underpass' ? 'PEDESTRIAN_UNDERPASS' : 'PEDESTRIAN_LINK',
+      study.pedestrianLink.footprint, true,
+    )] : []),
     polyline('GRADING_LIMIT', alternative.gradingBoundary, true),
     polyline('SECTION_CUT', line),
     ...[line[0], line.at(-1)].map(({ x, y }) => label(x, y, 'A')),

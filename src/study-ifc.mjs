@@ -19,6 +19,21 @@ export function writeStudyIfc(writeCivilIfc, calculation, selected, { name, revi
   if (!alternative) throw new Error('내보낼 대안을 선택하세요.');
   const building = study.stationBuilding;
   const road = study.accessRoad;
+  const link = study.pedestrianLink;
+  const linkLevels = alternative.pedestrianLink;
+  const linkElement = link ? [{
+    tag: 'pedestrian-link',
+    cls: 'IfcSlab',
+    name: link.label,
+    objectType: 'Concept pedestrian connection',
+    body: {
+      kind: 'mesh',
+      positions: [...link.footprint, ...link.centerline].flatMap(({ x, y }, index) => [
+        x, y, index < 2 || index === 4 ? linkLevels.startLevel : linkLevels.endLevel,
+      ]),
+      indices: [0, 4, 5, 0, 5, 3, 4, 1, 2, 4, 2, 5],
+    },
+  }] : [];
   const accessSurface = road && accessRoadSurface(road, alternative.plazaLevel);
   const roadElement = accessSurface ? [{
     tag: 'access-road',
@@ -45,7 +60,7 @@ export function writeStudyIfc(writeCivilIfc, calculation, selected, { name, revi
       name: '승강장 개념 표면',
       objectType: 'Concept platform deck',
       body: platformMesh(platformDeck, study.platform.edgeOffset),
-    }, ...roadElement],
+    }, ...roadElement, ...linkElement],
     masses: building ? [{
       id: 'station-building',
       name: building.label,
@@ -76,6 +91,12 @@ export function writeStudyIfc(writeCivilIfc, calculation, selected, { name, revi
       ['AccessRoadGradePercent', alternative.accessRoad?.gradePercent, 'real'],
       ['AccessRoadGradeLimitPercent', road?.maxGradePercent, 'real'],
       ['AccessRoadGradeExceedsLimit', alternative.accessRoad?.exceedsLimit, 'bool'],
+      ['PedestrianLinkType', link?.label, 'label'],
+      ['PedestrianLinkLength', link?.length, 'len'],
+      ['PedestrianLinkStartLevel', linkLevels?.startLevel, 'len'],
+      ['PedestrianLinkEndLevel', linkLevels?.endLevel, 'len'],
+      ['PedestrianLinkPlazaLevelDifference', linkLevels?.plazaLevelDifference, 'len'],
+      ['PedestrianLinkStationLevelDifference', linkLevels?.stationLevelDifference, 'len'],
       ['SourceCrs', sourceCrs?.epsgCode ? `EPSG:${sourceCrs.epsgCode}` : sourceCrs?.name, 'label'],
     ]]],
   }).text;

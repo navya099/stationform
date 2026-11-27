@@ -10,11 +10,14 @@ const ui = Object.fromEntries([
   'building-type', 'building-clearance', 'building-offset-label', 'building-summary', 'building-levels', 'building-area',
   'road-enabled', 'road-fields', 'road-x', 'road-y', 'road-width', 'road-edge', 'road-limit',
   'road-results', 'road-overview', 'road-grades', 'volume-scope',
+  'link-enabled', 'link-fields', 'link-type', 'link-width', 'link-edge', 'link-offset', 'link-offset-row',
+  'link-offset-label', 'link-results', 'link-overview', 'link-levels', 'link-plaza-heading', 'link-station-heading',
 ].map((id) => [id, document.getElementById(id)]));
 const files = { source: null, settings: null };
 const exportButtons = [...document.querySelectorAll('[data-export]')];
 const buildingLegends = document.querySelectorAll('[data-building-legend]');
 const roadLegend = document.querySelector('[data-road-legend]');
+const linkLegend = document.querySelector('[data-link-legend]');
 const roadFields = {
   x: ui['road-x'], y: ui['road-y'], width: ui['road-width'],
   plazaEdge: ui['road-edge'], maxGradePercent: ui['road-limit'],
@@ -49,6 +52,25 @@ function updateRoadFields() {
   ui['road-enabled'].disabled = !files.settings;
   ui['road-fields'].hidden = !ui['road-enabled'].checked;
   ui['road-fields'].disabled = !files.settings || !ui['road-enabled'].checked;
+}
+
+function readLink() {
+  if (!ui['link-enabled'].checked) return null;
+  const type = ui['link-type'].value;
+  return {
+    type, width: ui['link-width'].valueAsNumber, plazaEdge: ui['link-edge'].valueAsNumber,
+    offset: type === 'ground' ? 0 : ui['link-offset'].valueAsNumber,
+  };
+}
+
+function updateLinkFields() {
+  const allowed = Boolean(files.settings) && ui['building-enabled'].checked;
+  const enabled = allowed && ui['link-enabled'].checked;
+  const type = ui['link-type'].value;
+  ui['link-enabled'].disabled = !allowed;
+  ui['link-fields'].hidden = ui['link-fields'].disabled = !enabled;
+  ui['link-offset-row'].hidden = ui['link-offset'].disabled = type === 'ground';
+  ui['link-offset-label'].textContent = type === 'underpass' ? '낮은 접속부·지표면 아래 깊이 (m)' : '높은 접속부 위 추가 높이 (m)';
 }
 
 function readBuilding() {
@@ -93,8 +115,12 @@ function updateExportButtons() {
   const sameRoad = road
     ? Object.entries(road).every(([key, value]) => value === study?.accessRoad?.[key])
     : !study?.accessRoad;
+  const link = readLink();
+  const sameLink = link
+    ? Object.entries(link).every(([key, value]) => value === study?.pedestrianLink?.[key])
+    : !study?.pedestrianLink;
   const current = study && ui.station.valueAsNumber === study.station.value
-    && sameBuilding && sameRoad
+    && sameBuilding && sameRoad && sameLink
     && alternatives.every(({ plazaLevel }, index) => plazaLevel === study.alternatives[index].plazaLevel);
   for (const button of exportButtons) button.disabled = !current;
 }
@@ -104,12 +130,33 @@ function message(text, error = false) {
   ui.status.toggleAttribute('data-error', error);
 }
 
+function presentLink() {
+  const link = study?.pedestrianLink;
+  ui['link-results'].hidden = linkLegend.hidden = !link;
+  ui['link-levels'].replaceChildren();
+  if (!link) return;
+  const ground = link.type === 'ground';
+  const selectedLink = study.alternatives[selected].pedestrianLink;
+  const measure = `${link.label} · ${format.format(link.length)} m × ${format.format(link.width)} m`;
+  ui['link-overview'].textContent = ground ? `${measure} · 선택 대안 경사 ${format.format(selectedLink.gradePercent)} %` : measure;
+  ui['link-plaza-heading'].textContent = ground ? '광장 표고 (m)' : '광장 표고차 (m)';
+  ui['link-station-heading'].textContent = ground ? '역사 표고 (m)' : '역사 표고차 (m)';
+  for (const [index, { name, pedestrianLink }] of study.alternatives.entries()) {
+    const row = ui['link-levels'].insertRow();
+    if (index === selected) row.setAttribute('aria-current', 'true');
+    row.insertCell().textContent = name;
+    row.insertCell().textContent = format.format(ground ? pedestrianLink.startLevel : pedestrianLink.plazaLevelDifference);
+    row.insertCell().textContent = format.format(ground ? pedestrianLink.endLevel : pedestrianLink.stationLevelDifference);
+  }
+}
+
 function present() {
   const alternative = study?.alternatives[selected];
   ui.plan.replaceChildren();
   ui.section.replaceChildren();
   ui.volumes.replaceChildren();
   ui['road-grades'].replaceChildren();
+  presentLink();
   const road = study?.accessRoad;
   ui['road-results'].hidden = roadLegend.hidden = !road;
   ui['volume-scope'].hidden = !study;
@@ -163,6 +210,12 @@ function showSettings(result) {
   ui['road-enabled'].checked = Boolean(result.accessRoad);
   ui['road-fields'].hidden = !result.accessRoad;
   for (const [key, field] of Object.entries(roadFields)) field.value = result.accessRoad?.[key] ?? field.defaultValue;
+  const link = result.pedestrianLink;
+  ui['link-enabled'].checked = Boolean(link);
+  ui['link-type'].value = link?.type ?? 'bridge';
+  ui['link-width'].value = link?.width ?? ui['link-width'].defaultValue;
+  ui['link-edge'].value = link?.plazaEdge ?? ui['link-edge'].defaultValue;
+  ui['link-offset'].value = link?.offset ?? ui['link-offset'].defaultValue;
   settingsEdited = false;
 }
 
@@ -175,7 +228,7 @@ async function run() {
   study = undefined;
   present();
   message('계산 중');
-  study = await window.stationForm.run(...studyInput(), readBuilding(), readRoad());
+  study = await window.stationForm.run(...studyInput(), readBuilding(), readRoad(), readLink());
   present();
   message('계산 완료');
 }
@@ -183,7 +236,8 @@ async function run() {
 async function task(action) {
   const controls = [ui['open-project'], ui['save-project'], ui['open-source'], ui['open-settings'], ui.sample, ui.station,
     ui.alternative, ui['plaza-level'], ui.calculate, ui['report-intent'], ui['report-rationale'],
-    ui['building-enabled'], ui['building-fields'], ui['road-enabled'], ui['road-fields'], ...exportButtons];
+    ui['building-enabled'], ui['building-fields'], ui['road-enabled'], ui['road-fields'],
+    ui['link-enabled'], ui['link-fields'], ...exportButtons];
   for (const control of controls) control.disabled = true;
   try {
     await action();
@@ -196,6 +250,7 @@ async function task(action) {
     ui['building-enabled'].disabled = !files.settings;
     ui['building-fields'].disabled = !files.settings || !ui['building-enabled'].checked;
     updateRoadFields();
+    updateLinkFields();
     ui.calculate.disabled = !files.source || !files.settings;
     ui['save-project'].disabled = ui.calculate.disabled;
     updateExportButtons();
@@ -242,6 +297,8 @@ ui['plaza-level'].addEventListener('input', () => {
 ui.station.addEventListener('input', studyChanged);
 ui['building-enabled'].addEventListener('change', () => {
   ui['building-fields'].hidden = ui['building-fields'].disabled = !ui['building-enabled'].checked;
+  if (!ui['building-enabled'].checked) ui['link-enabled'].checked = false;
+  updateLinkFields();
   studyChanged();
 });
 ui['building-type'].addEventListener('change', () => {
@@ -256,6 +313,16 @@ ui['road-enabled'].addEventListener('change', () => {
   studyChanged();
 });
 for (const field of Object.values(roadFields)) field.addEventListener('input', studyChanged);
+ui['link-enabled'].addEventListener('change', () => {
+  updateLinkFields();
+  studyChanged();
+});
+ui['link-type'].addEventListener('change', () => {
+  if (ui['link-type'].value !== 'ground') ui['link-offset'].value = ui['link-type'].value === 'underpass' ? 1 : 0;
+  updateLinkFields();
+  studyChanged();
+});
+for (const field of [ui['link-width'], ui['link-edge'], ui['link-offset']]) field.addEventListener('input', studyChanged);
 ui['study-form'].addEventListener('submit', (event) => {
   event.preventDefault();
   if (files.source && files.settings) void task(run);
@@ -282,7 +349,7 @@ ui['open-project'].addEventListener('click', () => task(async () => {
   await run();
 }));
 ui['save-project'].addEventListener('click', () => task(async () => {
-  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes(), readBuilding(), readRoad());
+  const name = await window.stationForm.saveProject(...studyInput(), selected, readReportNotes(), readBuilding(), readRoad(), readLink());
   if (!name) return;
   projectName = name;
   dirty = settingsEdited = false;
@@ -300,7 +367,7 @@ for (const field of [ui['report-intent'], ui['report-rationale']]) {
 for (const button of exportButtons) {
   button.addEventListener('click', () => task(async () => {
     const name = await window.stationForm.exportStudy(
-      button.dataset.export, ...studyInput(), selected, readReportNotes(), readBuilding(), readRoad(),
+      button.dataset.export, ...studyInput(), selected, readReportNotes(), readBuilding(), readRoad(), readLink(),
     );
     if (name) message(`${name} 파일을 저장했습니다.`);
   }));

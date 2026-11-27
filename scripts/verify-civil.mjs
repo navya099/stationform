@@ -33,6 +33,26 @@ assert.deepEqual(study.stationBuilding.section, [
 ]);
 assert.equal(study.stationBuilding.footprintArea, 480);
 assert.equal(study.stationBuilding.type, 'over-track');
+assert.equal(study.pedestrianLink.length, 4);
+assert.deepEqual(study.pedestrianLink.footprint, [
+  { x: 48.5, y: 36 }, { x: 51.5, y: 36 }, { x: 51.5, y: 40 }, { x: 48.5, y: 40 },
+]);
+assert.deepEqual(study.alternatives.map(({ pedestrianLink }) => pedestrianLink.plazaLevelDifference), [10, 9]);
+assert.equal(study.alternatives[1].pedestrianLink.startLevel, 21);
+assert.equal(study.alternatives[1].pedestrianLink.stationLevelDifference, 0);
+const underpassOptions = { ...options, pedestrianLink: { ...options.pedestrianLink, type: 'underpass', offset: 1 } };
+const underpass = calculateSiteStudy(civil, xml, underpassOptions);
+assert.deepEqual(underpass.study.alternatives[1].pedestrianLink, {
+  startLevel: 9, endLevel: 9, gradePercent: 0, plazaLevelDifference: -3, stationLevelDifference: -12,
+});
+const groundLink = studySite(civil, xml, { ...options, pedestrianLink: { ...options.pedestrianLink, type: 'ground' } });
+assert.equal(groundLink.alternatives[1].pedestrianLink.gradePercent, 225);
+assert.throws(() => studySite(civil, xml, {
+  ...options, pedestrianLink: { ...options.pedestrianLink, plazaEdge: 1 },
+}), /광장을 가로지릅니다/);
+assert.throws(() => studySite(civil, xml, {
+  ...options, stationBuilding: undefined,
+}), /역사 본체를 배치한 뒤/);
 assert.equal(study.accessRoad.length, 15);
 assert.equal(study.accessRoad.connectionLevel, 10);
 assert.deepEqual(study.accessRoad.footprint, [
@@ -54,6 +74,7 @@ for (const [index, surface] of calculation.proposedSurfaces.entries()) {
 const reverse = calculateSiteStudy(civil, xml, {
   ...options, plaza: { ...options.plaza, boundary: options.plaza.boundary.slice().reverse() },
   accessRoad: { ...options.accessRoad, x: 45, plazaEdge: 3 },
+  pedestrianLink: { ...options.pedestrianLink, plazaEdge: 1 },
 });
 assert.ok(Math.abs(reverse.proposedSurfaces[1].elevationAt(47.5, 12.5) - 11) < 1e-6);
 const cut = calculateSiteStudy(civil, xml, {
@@ -93,7 +114,9 @@ assert.throws(() => studySite(civil, xml, elevatedOptions), /지붕 표고는 �
 assert.throws(() => studySite(civil, xml, {
   ...options, stationBuilding: { ...dimensions, type: 'unknown' },
 }), /지원하지 않는 역사 형식/);
-assert.equal(studySite(civil, xml, { ...options, stationBuilding: undefined }).stationBuilding, undefined);
+assert.equal(studySite(civil, xml, {
+  ...options, stationBuilding: undefined, pedestrianLink: undefined,
+}).stationBuilding, undefined);
 assert.throws(() => studySite(civil, xml, {
   ...options,
   stationBuilding: { ...options.stationBuilding, width: -1 },
@@ -131,6 +154,8 @@ assert.match(ifc, /FILE_SCHEMA\(\('IFC4X3_ADD2'\)\)/);
 assert.match(ifc, /IFCBUILDINGELEMENTPROXY\(/);
 assert.match(ifc, /IFCSLAB\(/);
 assert.match(ifc, /IFCPAVEMENT\(/);
+assert.match(ifc, /'PedestrianLinkStartLevel',\$,IFCLENGTHMEASURE\(21\.\)/);
+assert.match(ifc, /'PedestrianLinkPlazaLevelDifference',\$,IFCLENGTHMEASURE\(9\.\)/);
 assert.match(ifc, /'EarthworkScope',\$,IFCLABEL\('Plaza and access road'\)/);
 assert.match(ifc, /'AccessRoadGradeExceedsLimit',\$,IFCBOOLEAN\(\.T\.\)/);
 assert.match(ifc, /IFCTRIANGULATEDIRREGULARNETWORK\(/);
@@ -142,11 +167,14 @@ assert.match(planDxf, /AC1009[\s\S]*GRADING_LIMIT[\s\S]*1234567890abcdef/);
 assert.match(sectionDxf, /AC1009[\s\S]*PROPOSED_GROUND[\s\S]*1234567890abcdef/);
 assert.match(planDxf, /STATION_BUILDING/);
 assert.match(planDxf, /ACCESS_ROAD/);
+assert.match(planDxf, /PEDESTRIAN_LINK/);
+assert.match(writeStudyDxf(civil.writeDxf, underpass.study, revision, 'plan', 1), /PEDESTRIAN_UNDERPASS/);
 assert.match(sectionDxf, /STATION_BUILDING/);
 assert.equal(csv.codePointAt(0), 0xfeff);
 assert.equal(csv.trim().split('\r\n').length, 3);
 assert.equal(csv.match(/1234567890abcdef/g).length, 2);
 assert.match(csv, /"토공량 범위"/);
+assert.match(csv, /"광장 접속 표고차 \(m\)"/);
 assert.equal(csv.match(/"광장·진입로"/g).length, 2);
 assert.throws(() => writeStudyDxf(civil.writeDxf, study, revision, 'section', 2), /대안을 선택하세요/);
 

@@ -1,4 +1,5 @@
 import { buildStationMass } from './station-mass.mjs';
+import { buildPedestrianLink, pedestrianLevels } from './pedestrian-link.mjs';
 import { buildAccessRoad, gradeAccessRoad, joinAccessRoad } from './access-road.mjs';
 
 function select(items, index, label) {
@@ -72,6 +73,7 @@ export function calculateSiteStudy(civil, xml, options) {
     options.stationBuilding, reference, railLevel, station, range, section, ground.elevationAt(x, y),
   );
   const accessRoad = buildAccessRoad(civil, options.accessRoad, plaza.boundary, ground);
+  const pedestrianLink = buildPedestrianLink(civil, options.pedestrianLink, plaza.boundary, stationBuilding, reference, ground);
   const line = [offsetPoint(reference, -section.left), { x, y }, offsetPoint(reference, section.right)];
   const cutSection = (surface) => civil.cutSection(surface, line, { origin: section.left }).runs;
   const groundSection = cutSection(ground);
@@ -97,6 +99,7 @@ export function calculateSiteStudy(civil, xml, options) {
     station: { value: station, x, y, railLevel },
     ...(stationBuilding && { stationBuilding }),
     ...(accessRoad && { accessRoad }),
+    ...(pedestrianLink && { pedestrianLink }),
     plan: {
       track: planPoints.map(({ point }) => xy(point)),
       platform: [
@@ -136,6 +139,7 @@ export function calculateSiteStudy(civil, xml, options) {
       return {
         name, plazaLevel, earthwork, gradingBoundary: regions[0], plannedSection: cutSection(surface),
         ...(accessRoad && { accessRoad: gradeAccessRoad(accessRoad, plazaLevel) }),
+        ...(pedestrianLink && { pedestrianLink: pedestrianLevels(pedestrianLink, plazaLevel, stationBuilding.floorLevel) }),
       };
     }),
   };

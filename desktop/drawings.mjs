@@ -20,12 +20,13 @@ export function drawPlan(svg, study, alternative) {
   const { line } = study.section;
   const footprint = study.stationBuilding?.footprint ?? [];
   const road = study.accessRoad;
+  const link = study.pedestrianLink;
   let minX = line[0].x;
   let maxX = minX;
   let minY = line[0].y;
   let maxY = minY;
   const boundaries = study.alternatives.map(({ gradingBoundary }) => gradingBoundary);
-  for (const path of [track, platform, plaza, line, footprint, road?.footprint ?? [], ...boundaries]) {
+  for (const path of [track, platform, plaza, line, footprint, road?.footprint ?? [], link?.footprint ?? [], ...boundaries]) {
     for (const { x, y } of path) {
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
@@ -48,6 +49,9 @@ export function drawPlan(svg, study, alternative) {
   polyline(svg, alternative.gradingBoundary, project, 'grading', true);
   polyline(svg, platform, project, 'platform', true);
   if (footprint.length) polyline(svg, footprint, project, 'station-building', true);
+  if (link) {
+    polyline(svg, link.footprint, project, link.type === 'underpass' ? 'pedestrian-link pedestrian-underpass' : 'pedestrian-link', true);
+  }
   polyline(svg, track, project, 'track');
   polyline(svg, line, project, 'cut');
   for (const end of [line[0], line.at(-1)]) {
